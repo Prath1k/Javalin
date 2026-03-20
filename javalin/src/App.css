@@ -678,3 +678,133 @@
   text-transform: uppercase;
   font-weight: 500;
 }
+
+/* ── Mobile & Responsive ────────────────────────────────── */
+
+.menu-toggle {
+  display: none !important;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Tablet / Small Desktop */
+@media (max-width: 1024px) {
+  .topbar-search {
+    width: 200px;
+  }
+  
+  .content-area {
+    padding: 32px 24px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: flex !important;
+    margin-right: 12px;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+    background: var(--bg-elevated);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .topbar {
+    padding: 0 16px;
+  }
+
+  .topbar-search {
+    display: none; /* Hide search on small mobile to save space */
+  }
+
+  .topbar-left {
+    gap: 0;
+  }
+
+  .topbar-tabs {
+    display: none; /* Hide tabs on mobile, or move to sidebar? */
+  }
+
+  .page-title {
+    font-size: 14px;
+  }
+
+  .content-area {
+    padding: 24px 16px;
+  }
+
+  .hub-header {
+    margin-bottom: 32px;
+  }
+
+  .hub-title {
+    font-size: 18px;
+  }
+
+  .game-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px 16px;
+  }
+
+  .game-card-title {
+    font-size: 11px;
+  }
+
+  .game-card-desc {
+    display: none; /* Hide desc on very small cards */
+  }
+
+  .hub-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 24px 16px;
+  }
+
+  .footer-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .footer-status {
+    text-align: left;
+    width: 100%;
+  }
+
+  .footer-status-badge {
+    justify-content: flex-start;
+  }
+}
+
+/* Extra Small Devices */
+@media (max-width: 480px) {
+  .game-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

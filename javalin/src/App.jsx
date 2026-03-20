@@ -165,9 +165,13 @@ const Icon = ({ name, className = '' }) => (
 );
 
 // ── Sidebar ────────────────────────────────────────────────
-function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, user, onSignIn, onSignOut, theme }) {
+function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, user, onSignIn, onSignOut, theme, isOpen, onClose }) {
   return (
-    <aside className="sidebar">
+    <>
+      {/* Overlay for mobile */}
+      <div className={`sidebar-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
+      
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       {/* Brand */}
       <div className="brand" onClick={onHome}>
         <div className="brand-logo-container">
@@ -266,14 +270,18 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
         )}
       </div>
     </aside>
+    </>
   );
 }
 
 // ── Topbar ─────────────────────────────────────────────────
-function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onHome, theme, onToggleTheme }) {
+function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onHome, theme, onToggleTheme, onToggleSidebar }) {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <button className="topbar-btn menu-toggle" onClick={onToggleSidebar}>
+          <Icon name="menu" />
+        </button>
         <div className="page-title">
           {activeGame ? (
             <>
@@ -476,6 +484,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('hub');
   const [activeGame, setActiveGame] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [user, setUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -569,6 +578,7 @@ export default function App() {
       setActiveGame(game);
       setIsFullscreen(false);
       setActiveTab('hub');
+      setSidebarOpen(false); // Close sidebar on mobile
     }
   };
 
@@ -598,6 +608,8 @@ export default function App() {
           user={user}
           onSignIn={() => { setAuthError(''); setShowLoginModal(true); }}
           onSignOut={handleSignOut}
+          isOpen={isSidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
       )}
 
@@ -612,6 +624,7 @@ export default function App() {
             onHome={handleHome}
             theme={theme}
             onToggleTheme={toggleTheme}
+            onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
           />
         )}
 
