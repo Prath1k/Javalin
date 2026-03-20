@@ -1,0 +1,141 @@
+.space-invaders-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+  height: auto;
+  background-color: #000;
+  color: #0f0;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.space-invaders-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 800px;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.header-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 90vw;
+  display: flex;
+  justify-content: center;
+}
+
+.space-invaders-canvas {
+  background-color: #050505;
+  border: 4px solid #0f0;
+  border-radius: 8px;
+  max-width: 100%;
+  max-height: 60vh;
+  aspect-ratio: 4/3;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+  image-rendering: pixelated;
+}
+
+.controls-hint {
+  margin-top: 15px;
+  font-size: 1rem;
+  color: #aaa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobile-controls {
+  display: none;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+  .controls-hint-text {
+    display: none;
+  }
+  .mobile-controls {
+    display: flex;
+  }
+}
+
+.mc-btn {
+  background: rgba(0, 255, 0, 0.2);
+  border: 2px solid #0f0;
+  color: #0f0;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-btn:active {
+  background: rgba(0, 255, 0, 0.5);
+}
+.mc-fire {
+  width: 80px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.game-over-screen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid #0f0;
+  padding: 30px;
+  text-align: center;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+  z-index: 10;
+}
+
+.game-over-screen h2 {
+  font-size: 2.5rem;
+  margin: 0 0 10px 0;
+  color: #f00;
+  text-shadow: 0 0 10px #f00;
+}
+
+.game-over-screen.victory h2 {
+  color: #0f0;
+  text-shadow: 0 0 10px #0f0;
+}
+
+.restart-btn {
+  margin-top: 20px;
+  background: #0f0;
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1.2rem;
+  font-family: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.2s;
+}
+
+.restart-btn:hover {
+  background: #fff;
+  box-shadow: 0 0 15px #0f0;
+}
