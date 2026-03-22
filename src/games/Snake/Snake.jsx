@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useScores } from '../../ScoreContext';
 import './Snake.css';
 
 const GRID_SIZE = 25;
@@ -42,9 +43,9 @@ const Snake = () => {
   const [gameOver, setGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(
-    parseInt(localStorage.getItem('snakeHighScore')) || 0
-  );
+  const { highScores, updateHighScore } = useScores();
+  const highScore = highScores['retro-snake'] || 0;
+  
   const [particles, setParticles] = useState([]);
   const [shaking, setShaking] = useState(false);
   const [eatFlash, setEatFlash] = useState(false);
@@ -154,8 +155,7 @@ const Snake = () => {
     setShaking(true);
     setTimeout(() => setShaking(false), 500);
     if (score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('snakeHighScore', score.toString());
+      updateHighScore('retro-snake', score);
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
+import { ScoreProvider, useScores } from './ScoreContext';
 
 import BottleSpin from './games/BottleSpin/BottleSpin';
 import Snake from './games/Snake/Snake';
@@ -165,7 +166,7 @@ const Icon = ({ name, className = '' }) => (
 );
 
 // ── Sidebar ────────────────────────────────────────────────
-function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, user, onSignIn, onSignOut, theme, isOpen, onClose }) {
+function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, user, onSignIn, onSignOut, onSettings, theme, isOpen, onClose }) {
   return (
     <>
       {/* Overlay for mobile */}
@@ -194,13 +195,7 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
             <Icon name="dashboard" className="nav-icon" />
             Game Hub
           </div>
-          <div
-            className={`nav-item ${activeTab === 'discover' ? 'active' : ''}`}
-            onClick={() => onTabChange('discover')}
-          >
-            <Icon name="grid_view" className="nav-icon" />
-            Discover
-          </div>
+
         </nav>
       </div>
 
@@ -239,7 +234,7 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
-              <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }}>
+              <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }} onClick={onSettings}>
                 <Icon name="settings" className="nav-icon" />
                 Settings
               </div>
@@ -251,7 +246,7 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
           </>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', paddingBottom: '24px' }}>
-            <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }}>
+            <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }} onClick={onSettings}>
               <Icon name="settings" className="nav-icon" />
               Settings
             </div>
@@ -302,12 +297,7 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
             >
               All Experiences
             </div>
-            <div
-              className={`topbar-tab ${activeTab === 'discover' ? 'active' : ''}`}
-              onClick={() => onTabChange('discover')}
-            >
-              Installed
-            </div>
+
           </div>
         )}
       </div>
@@ -417,24 +407,6 @@ function HubView({ onSelectGame, searchQuery }) {
   );
 }
 
-// ── Discover View ───────────────────────────────────────────
-function DiscoverView() {
-  return (
-    <div className="content-area">
-      <div className="hub-header">
-        <h2 className="hub-title">Discover</h2>
-        <p className="hub-subtitle">New experiences coming soon.</p>
-      </div>
-      <div className="discover-empty">
-        <Icon name="explore" style={{ color: 'var(--text-label)', fontSize: 32 }} />
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', letterSpacing: '0.02em', marginTop: 8 }}>
-          No new titles available at this time.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ── Game Player ─────────────────────────────────────────────
 function GamePlayer({ game, onClose, onFullscreen, isFullscreen }) {
   const GameComponent = game.component;
@@ -493,6 +465,7 @@ export default function App() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -596,22 +569,24 @@ export default function App() {
   const handleFullscreen = () => setIsFullscreen(f => !f);
 
   return (
-    <div className="app-layout">
-      {!isFullscreen && (
-        <Sidebar
-          activeGame={activeGame}
-          onSelectGame={handleSelectGame}
-          onHome={handleHome}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          theme={theme}
-          user={user}
-          onSignIn={() => { setAuthError(''); setShowLoginModal(true); }}
-          onSignOut={handleSignOut}
-          isOpen={isSidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-      )}
+    <ScoreProvider user={user}>
+      <div className="app-layout">
+        {!isFullscreen && (
+          <Sidebar
+            activeGame={activeGame}
+            onSelectGame={handleSelectGame}
+            onHome={handleHome}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            theme={theme}
+            user={user}
+            onSignIn={() => { setAuthError(''); setShowLoginModal(true); }}
+            onSignOut={handleSignOut}
+            onSettings={() => setShowSettingsModal(true)}
+            isOpen={isSidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
       <main className="main-wrapper">
         {!isFullscreen && (
@@ -635,8 +610,6 @@ export default function App() {
             onFullscreen={handleFullscreen}
             isFullscreen={isFullscreen}
           />
-        ) : activeTab === 'discover' ? (
-          <DiscoverView />
         ) : (
           <HubView onSelectGame={handleSelectGame} searchQuery={searchQuery} />
         )}
@@ -755,6 +728,81 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {showSettingsModal && (
+        <SettingsModal 
+          user={user} 
+          onClose={() => setShowSettingsModal(false)} 
+        />
+      )}
+      </div>
+    </ScoreProvider>
+  );
+}
+
+function SettingsModal({ user, onClose }) {
+  const { highScores } = useScores();
+
+  return (
+    <div className="modal-overlay" style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      backdropFilter: 'blur(8px)'
+    }}>
+      <div className="modal-content" style={{
+        backgroundColor: 'var(--bg-card)', padding: '32px',
+        borderRadius: '16px', width: '100%', maxWidth: '500px',
+        border: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column', gap: '24px',
+        maxHeight: '80vh', overflowY: 'auto'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Settings & Profile</h2>
+          <button 
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+
+        <div>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', color: 'var(--text-primary)' }}>Account</h3>
+          {user ? (
+            <p style={{ color: 'var(--text-muted)' }}>Logged in as: <strong>{user.email || user.user_metadata?.full_name}</strong></p>
+          ) : (
+            <p style={{ color: 'var(--text-muted)' }}>You are playing as a guest. All progress is saved locally.</p>
+          )}
+        </div>
+
+        <div>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-primary)' }}>Your High Scores</h3>
+          {Object.keys(highScores).length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No high scores recorded yet. Go play some games!</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {Object.entries(highScores).map(([gameId, score]) => {
+                const gameInfo = GAMES.find(g => g.id === gameId);
+                const title = gameInfo ? gameInfo.title : gameId;
+                return (
+                  <div key={gameId} style={{ 
+                    padding: '12px', 
+                    backgroundColor: 'rgba(255,255,255,0.05)', 
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{title}</span>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--primary-color)' }}>{score}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

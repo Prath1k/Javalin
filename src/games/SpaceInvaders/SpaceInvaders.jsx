@@ -1,7 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useScores } from '../../ScoreContext';
 import './SpaceInvaders.css';
 
 export default function SpaceInvaders() {
+  const { highScores, updateHighScore } = useScores();
+  const highScore = highScores['space-invaders'] || 0;
+  
   const canvasRef = useRef(null);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
@@ -138,6 +142,7 @@ export default function SpaceInvaders() {
         state.isWon = true;
         setGameWon(true);
         setGameOver(true);
+        updateHighScore('space-invaders', state.score);
       }
 
       if (hitEdge) {
@@ -149,6 +154,7 @@ export default function SpaceInvaders() {
             if (alien.y + alien.height >= state.player.y) {
               state.isGameOver = true;
               setGameOver(true);
+              updateHighScore('space-invaders', state.score);
             }
           }
         });
@@ -206,6 +212,7 @@ export default function SpaceInvaders() {
             bullet.y + bullet.height > state.player.y) {
           state.isGameOver = true;
           setGameOver(true);
+          updateHighScore('space-invaders', state.score);
         }
       });
       

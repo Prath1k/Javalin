@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useScores } from '../../ScoreContext';
 import './TerminalHacker.css';
 
 const WORD_LIST = [
@@ -16,6 +17,8 @@ const WORD_LIST = [
 const MATRIX_CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789';
 
 const TerminalHacker = () => {
+  const { updateHighScore } = useScores();
+  
   const [gameState, setGameState] = useState('start');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(5);
@@ -140,6 +143,7 @@ const TerminalHacker = () => {
   const endGame = () => {
     setGameState('gameover');
     cancelAnimationFrame(requestRef.current);
+    updateHighScore('terminal-hacker', score);
   };
 
   useEffect(() => {

@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useScores } from '../../ScoreContext';
 import './RhythmClicker.css';
 
 const RhythmClicker = () => {
+  const { updateHighScore } = useScores();
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
@@ -126,6 +129,12 @@ const RhythmClicker = () => {
     setPulseScale(1);
     setBeatBars(new Array(16).fill(0));
   }, []);
+
+  useEffect(() => {
+    if (!isPlaying && score > 0) {
+      updateHighScore('rhythm-clicker', score);
+    }
+  }, [isPlaying, score, updateHighScore]);
 
   useEffect(() => {
     return () => {

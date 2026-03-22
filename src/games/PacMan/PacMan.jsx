@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useScores } from '../../ScoreContext';
 import './PacMan.css';
 
 const MAP_SRC = [
@@ -86,9 +87,11 @@ const DIRS = {
 };
 
 export default function PacMan() {
+  const { highScores, updateHighScore } = useScores();
+  const highScore = highScores['pacman'] || 0;
+  
   const canvasRef = useRef(null);
   const [uiState, setUiState] = useState({ score: 0, lives: 3, over: false, won: false });
-  const [highScore, setHighScore] = useState(parseInt(localStorage.getItem('pac_highscore') || 0));
   
   const stateRef = useRef(getInitialState());
 
@@ -363,8 +366,7 @@ export default function PacMan() {
       });
 
       if (s.score > highScore) {
-        setHighScore(s.score);
-        localStorage.setItem('pac_highscore', s.score);
+        updateHighScore('pacman', s.score);
       }
 
       setUiState({ score: s.score, lives: s.lives, over: s.gameOver, won: s.gameWon });
