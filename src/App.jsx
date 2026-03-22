@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
 import { ScoreProvider, useScores } from './ScoreContext';
+import Leaderboard from './Leaderboard';
 
 import BottleSpin from './games/BottleSpin/BottleSpin';
 import Snake from './games/Snake/Snake';
@@ -195,7 +196,13 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
             <Icon name="dashboard" className="nav-icon" />
             Game Hub
           </div>
-
+          <div
+            className={`nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`}
+            onClick={() => { onTabChange('leaderboard'); onClose?.(); }}
+          >
+            <Icon name="leaderboard" className="nav-icon" />
+            Global Ranks
+          </div>
         </nav>
       </div>
 
@@ -285,11 +292,13 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
             </>
           ) : activeTab === 'hub' ? (
             'Library'
+          ) : activeTab === 'leaderboard' ? (
+            'Global Leaderboard'
           ) : (
             'Discover'
           )}
         </div>
-        {!activeGame && (
+        {!activeGame && activeTab === 'hub' && (
           <div className="topbar-tabs">
             <div
               className={`topbar-tab ${activeTab === 'hub' ? 'active' : ''}`}
@@ -297,7 +306,6 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
             >
               All Experiences
             </div>
-
           </div>
         )}
       </div>
@@ -610,6 +618,10 @@ export default function App() {
             onFullscreen={handleFullscreen}
             isFullscreen={isFullscreen}
           />
+        ) : activeTab === 'leaderboard' ? (
+          <div className="content-area">
+            <Leaderboard />
+          </div>
         ) : (
           <HubView onSelectGame={handleSelectGame} searchQuery={searchQuery} />
         )}

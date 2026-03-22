@@ -2,307 +2,323 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useScores } from '../../ScoreContext';
 import './SpaceInvaders.css';
 
+const ENEMY_TYPES = ['squid', 'crab', 'octopus', 'ufo'];
+const ALIEN_COLORS = { squid: '#ff0055', crab: '#00ffcc', octopus: '#cc00ff', ufo: '#ffea00' };
+
 export default function SpaceInvaders() {
-  const { highScores, updateHighScore } = useScores();
+  const { highScores, updateHighScore, guestId } = useScores();
   const highScore = highScores['space-invaders'] || 0;
   
   const canvasRef = useRef(null);
-  const [score, setScore] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
-  const [gameWon, setGameWon] = useState(false);
+  const [uiState, setUiState] = useState({ score: 0, level: 1, over: false });
+  const [showTutorial, setShowTutorial] = useState(true);
 
-  // Game state refs to avoid re-renders during the game loop
-  const gameState = useRef({
-    player: { x: 375, y: 550, width: 50, height: 20, speed: 5, dx: 0 },
+  const stateRef = useRef({
+    player: { x: 375, y: 550, width: 44, height: 24, speed: 6, dx: 0 },
     bullets: [],
     alienBullets: [],
     aliens: [],
     particles: [],
+    stars: [],
     score: 0,
+    level: 1,
     alienDirection: 1,
-    alienDrop: 0,
     alienSpeed: 1,
     lastAlienFire: 0,
     isGameOver: false,
-    isWon: false,
-    keys: { ArrowLeft: false, ArrowRight: false, Space: false }
+    keys: { ArrowLeft: false, ArrowRight: false, a: false, d: false, Space: false }
   });
 
-  const initGame = () => {
+  const initLevel = (lvl) => {
     const aliens = [];
-    const rows = 5;
-    const cols = 10;
+    const rows = Math.min(4 + Math.floor(lvl / 2), 7);
+    const cols = Math.min(8 + Math.floor(lvl / 3), 12);
+    
+    const types = ['ufo', 'squid', 'crab', 'octopus'];
     for (let r = 0; r < rows; r++) {
+      let tIdx = r % types.length;
       for (let c = 0; c < cols; c++) {
         aliens.push({
-          x: c * 50 + 100,
-          y: r * 40 + 50,
-          width: 30,
-          height: 30,
-          alive: true,
-          type: r === 0 ? 'top' : r < 3 ? 'mid' : 'bottom'
+          x: c * 45 + (800 - (cols*45))/2,
+          y: r * 40 + 60,
+          width: 28, height: 28, alive: true,
+          type: types[tIdx],
+          offsetY: Math.random() * Math.PI * 2
         });
       }
     }
     
-    gameState.current = {
-      player: { x: 375, y: 550, width: 50, height: 20, speed: 5, dx: 0 },
-      bullets: [],
-      alienBullets: [],
-      aliens,
-      particles: [],
-      score: 0,
-      alienDirection: 1,
-      alienDrop: 0,
-      alienSpeed: 1,
-      lastAlienFire: Date.now(),
-      isGameOver: false,
-      isWon: false,
-      keys: { ArrowLeft: false, ArrowRight: false, Space: false }
-    };
-    
-    setScore(0);
-    setGameOver(false);
-    setGameWon(false);
+    let stars = [];
+    for(let i=0; i<100; i++) {
+        stars.push({
+            x: Math.random() * 800, y: Math.random() * 600,
+            s: Math.random() * 2 + 0.5,
+            dy: Math.random() * 2 + 0.2
+        });
+    }
+
+    stateRef.current.aliens = aliens;
+    stateRef.current.bullets = [];
+    stateRef.current.alienBullets = [];
+    stateRef.current.particles = [];
+    stateRef.current.stars = stars;
+    stateRef.current.alienSpeed = 1 + (lvl * 0.3);
+    stateRef.current.alienDirection = 1;
+    stateRef.current.lastAlienFire = Date.now();
+  };
+
+  const startGame = () => {
+    stateRef.current.score = 0;
+    stateRef.current.level = 1;
+    stateRef.current.isGameOver = false;
+    stateRef.current.player.x = 375;
+    initLevel(1);
+    setUiState({ score: 0, level: 1, over: false });
+    setShowTutorial(false);
   };
 
   useEffect(() => {
-    initGame();
-    
+    if (showTutorial) return;
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    let animationId;
-    
-    const handleKeyDown = (e) => {
-      if (e.key === 'ArrowLeft') gameState.current.keys.ArrowLeft = true;
-      if (e.key === 'ArrowRight') gameState.current.keys.ArrowRight = true;
-      if (e.key === ' ' || e.key === 'Spacebar') {
-        gameState.current.keys.Space = true;
-        // Fire bullet
-        if (gameState.current.bullets.length < 3 && !gameState.current.isGameOver) {
-          gameState.current.bullets.push({
-            x: gameState.current.player.x + gameState.current.player.width / 2 - 2,
-            y: gameState.current.player.y,
-            width: 4,
-            height: 10,
-            speed: 7
+    let animId;
+
+    const keyD = e => {
+      const k = stateRef.current.keys;
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) k.ArrowLeft = true;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) k.ArrowRight = true;
+      if ([' ', 'Spacebar'].includes(e.key)) {
+        k.Space = true;
+        if (stateRef.current.bullets.length < 3 && !stateRef.current.isGameOver) {
+          stateRef.current.bullets.push({
+            x: stateRef.current.player.x + 20, y: stateRef.current.player.y,
+            width: 4, height: 16, speed: 10
           });
         }
       }
     };
-
-    const handleKeyUp = (e) => {
-      if (e.key === 'ArrowLeft') gameState.current.keys.ArrowLeft = false;
-      if (e.key === 'ArrowRight') gameState.current.keys.ArrowRight = false;
-      if (e.key === ' ' || e.key === 'Spacebar') gameState.current.keys.Space = false;
+    const keyU = e => {
+      const k = stateRef.current.keys;
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) k.ArrowLeft = false;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) k.ArrowRight = false;
+      if ([' ', 'Spacebar'].includes(e.key)) k.Space = false;
     };
+    window.addEventListener('keydown', keyD);
+    window.addEventListener('keyup', keyU);
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    const update = () => {
-      const state = gameState.current;
-      if (state.isGameOver || state.isWon) return;
-
-      // Player Movement
-      if (state.keys.ArrowLeft) state.player.x -= state.player.speed;
-      if (state.keys.ArrowRight) state.player.x += state.player.speed;
-      
-      // Bounds
-      if (state.player.x < 0) state.player.x = 0;
-      if (state.player.x + state.player.width > 800) state.player.x = 800 - state.player.width;
-
-      // Bullets Movement
-      state.bullets.forEach((b, index) => {
-        b.y -= b.speed;
-        if (b.y < 0) state.bullets.splice(index, 1);
-      });
-
-      // Alien Bullets
-      state.alienBullets.forEach((b, index) => {
-        b.y += b.speed;
-        if (b.y > 600) state.alienBullets.splice(index, 1);
-      });
-
-      // Aliens Movement
-      let hitEdge = false;
-      let livingAliens = 0;
-      
-      state.aliens.forEach(alien => {
-        if (!alien.alive) return;
-        livingAliens++;
-        alien.x += state.alienSpeed * state.alienDirection;
-        
-        if (alien.x <= 0 || alien.x + alien.width >= 800) {
-          hitEdge = true;
+    const checkOver = () => {
+        if(stateRef.current.isGameOver) {
+            updateHighScore('space-invaders', stateRef.current.score);
+            setUiState(prev => ({ ...prev, over: true }));
         }
-      });
-
-      if (livingAliens === 0) {
-        state.isWon = true;
-        setGameWon(true);
-        setGameOver(true);
-        updateHighScore('space-invaders', state.score);
-      }
-
-      if (hitEdge) {
-        state.alienDirection *= -1;
-        state.aliens.forEach(alien => {
-          if (alien.alive) {
-            alien.y += 20;
-            // Alien reached player level
-            if (alien.y + alien.height >= state.player.y) {
-              state.isGameOver = true;
-              setGameOver(true);
-              updateHighScore('space-invaders', state.score);
-            }
-          }
-        });
-        state.alienSpeed += 0.2; // Speed up
-      }
-
-      // Alien Firing
-      if (Date.now() - state.lastAlienFire > 1000 - (state.alienSpeed * 100) && livingAliens > 0) {
-        const activeAliens = state.aliens.filter(a => a.alive);
-        const randomAlien = activeAliens[Math.floor(Math.random() * activeAliens.length)];
-        state.alienBullets.push({
-          x: randomAlien.x + randomAlien.width / 2 - 2,
-          y: randomAlien.y + randomAlien.height,
-          width: 4,
-          height: 10,
-          speed: 4
-        });
-        state.lastAlienFire = Date.now();
-      }
-
-      // Collisions: Player bullets -> Aliens
-      state.bullets.forEach((bullet, bIndex) => {
-        state.aliens.forEach((alien) => {
-          if (alien.alive && 
-              bullet.x < alien.x + alien.width &&
-              bullet.x + bullet.width > alien.x &&
-              bullet.y < alien.y + alien.height &&
-              bullet.y + bullet.height > alien.y) {
-            
-            alien.alive = false;
-            state.bullets.splice(bIndex, 1);
-            
-            // Add particles
-            for(let i=0; i<5; i++) {
-              state.particles.push({
-                x: alien.x + alien.width/2,
-                y: alien.y + alien.height/2,
-                vx: (Math.random() - 0.5) * 4,
-                vy: (Math.random() - 0.5) * 4,
-                life: 1
-              });
-            }
-            
-            state.score += alien.type === 'top' ? 30 : alien.type === 'mid' ? 20 : 10;
-            setScore(state.score);
-          }
-        });
-      });
-
-      // Collisions: Alien bullets -> Player
-      state.alienBullets.forEach((bullet) => {
-        if (bullet.x < state.player.x + state.player.width &&
-            bullet.x + bullet.width > state.player.x &&
-            bullet.y < state.player.y + state.player.height &&
-            bullet.y + bullet.height > state.player.y) {
-          state.isGameOver = true;
-          setGameOver(true);
-          updateHighScore('space-invaders', state.score);
-        }
-      });
-      
-      // Update particles
-      state.particles.forEach((p, i) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 0.05;
-        if(p.life <= 0) state.particles.splice(i, 1);
-      });
-    };
-
-    const draw = () => {
-      const state = gameState.current;
-      
-      // Clear canvas
-      ctx.fillStyle = '#111';
-      ctx.fillRect(0, 0, 800, 600);
-
-      // Draw Player
-      ctx.fillStyle = '#0f0';
-      ctx.fillRect(state.player.x, state.player.y, state.player.width, state.player.height);
-      // Ship cannon
-      ctx.fillRect(state.player.x + 20, state.player.y - 10, 10, 10);
-
-      // Draw Aliens
-      state.aliens.forEach(alien => {
-        if (!alien.alive) return;
-        ctx.fillStyle = alien.type === 'top' ? '#f0f' : alien.type === 'mid' ? '#0ff' : '#0f0';
-        ctx.fillRect(alien.x, alien.y, alien.width, alien.height);
-      });
-
-      // Draw Bullets
-      ctx.fillStyle = '#fff';
-      state.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-      
-      ctx.fillStyle = '#f00';
-      state.alienBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-      
-      // Draw Particles
-      state.particles.forEach(p => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
-        ctx.fillRect(p.x, p.y, 3, 3);
-      });
     };
 
     const loop = () => {
-      update();
-      draw();
-      animationId = requestAnimationFrame(loop);
-    };
+      const s = stateRef.current;
+      if (!s.isGameOver) {
+        if (s.keys.ArrowLeft) s.player.x -= s.player.speed;
+        if (s.keys.ArrowRight) s.player.x += s.player.speed;
+        if (s.player.x < 0) s.player.x = 0;
+        if (s.player.x > 800 - s.player.width) s.player.x = 800 - s.player.width;
 
+        s.stars.forEach(st => {
+            st.y += st.dy;
+            if(st.y > 600) { st.y = 0; st.x = Math.random()*800; }
+        });
+
+        s.bullets.forEach((b, i) => {
+          b.y -= b.speed;
+          if (b.y < -20) s.bullets.splice(i, 1);
+        });
+
+        s.alienBullets.forEach((b, i) => {
+          b.y += b.speed;
+          if (b.y > 620) s.alienBullets.splice(i, 1);
+        });
+
+        let hitEdge = false, aliveCount = 0;
+        s.aliens.forEach(a => {
+          if (!a.alive) return;
+          aliveCount++;
+          a.x += (s.alienSpeed * s.alienDirection);
+          a.offsetY += 0.05;
+          if (a.x <= 10 || a.x + a.width >= 790) hitEdge = true;
+          if (a.y + a.height > s.player.y) s.isGameOver = true;
+        });
+
+        if (aliveCount === 0) {
+            s.level++;
+            setUiState(p => ({ ...p, level: s.level }));
+            initLevel(s.level);
+            return (animId = requestAnimationFrame(loop));
+        }
+
+        if (hitEdge) {
+          s.alienDirection *= -1;
+          s.alienSpeed += 0.15;
+          s.aliens.forEach(a => { if(a.alive) a.y += 20; });
+        }
+
+        if (Date.now() - s.lastAlienFire > Math.max(300, 1200 - (s.level*100))) {
+          const active = s.aliens.filter(x => x.alive);
+          if (active.length > 0) {
+            const rand = active[Math.floor(Math.random()*active.length)];
+            s.alienBullets.push({ x: rand.x+12, y: rand.y+20, width: 4, height: 12, speed: 5 + s.level*0.5 });
+            s.lastAlienFire = Date.now();
+          }
+        }
+
+        for (let i = s.bullets.length - 1; i >= 0; i--) {
+          let b = s.bullets[i];
+          let hit = false;
+          for (let a of s.aliens) {
+            if (a.alive && b.x < a.x+a.width && b.x+b.width > a.x && b.y < a.y+a.height && b.y+b.height > a.y) {
+              a.alive = false; hit = true;
+              s.score += (a.type==="ufo"?50 : a.type==="squid"?30 : 10);
+              for(let k=0; k<8; k++) s.particles.push({
+                  x: a.x+14, y: a.y+14, vx: (Math.random()-0.5)*8, vy: (Math.random()-0.5)*8,
+                  life: 1, col: ALIEN_COLORS[a.type]
+              });
+              break;
+            }
+          }
+          if (hit) s.bullets.splice(i, 1);
+        }
+
+        for (let b of s.alienBullets) {
+          if (b.x < s.player.x+s.player.width && b.x+b.width > s.player.x && b.y < s.player.y+s.player.height && b.y+b.height > s.player.y) {
+            s.isGameOver = true;
+            for(let k=0; k<20; k++) s.particles.push({
+                x: s.player.x+20, y: s.player.y+10, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                life: 1, col: '#00ffcc'
+            });
+            break;
+          }
+        }
+
+        for(let i=s.particles.length-1; i>=0; i--){
+            s.particles[i].x += s.particles[i].vx;
+            s.particles[i].y += s.particles[i].vy;
+            s.particles[i].life -= 0.03;
+            if(s.particles[i].life<=0) s.particles.splice(i, 1);
+        }
+        
+        checkOver();
+        setUiState(p => ({ ...p, score: s.score }));
+      }
+
+      ctx.fillStyle = 'rgba(5, 5, 15, 0.4)';
+      ctx.fillRect(0, 0, 800, 600);
+
+      s.stars.forEach(st => {
+          ctx.fillStyle = `rgba(255, 255, 255, ${st.dy/3})`;
+          ctx.fillRect(st.x, st.y, st.s, st.s);
+      });
+
+      if (!s.isGameOver) {
+          ctx.fillStyle = '#00ffcc';
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = '#00ffcc';
+          ctx.beginPath();
+          ctx.moveTo(s.player.x + 22, s.player.y);
+          ctx.lineTo(s.player.x + s.player.width, s.player.y + s.player.height);
+          ctx.lineTo(s.player.x, s.player.y + s.player.height);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+      }
+
+      s.aliens.forEach(a => {
+        if (!a.alive) return;
+        let pY = a.y + Math.sin(a.offsetY)*5;
+        ctx.fillStyle = ALIEN_COLORS[a.type];
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.fillRect(a.x, pY, a.width, a.height);
+        
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(a.x+6, pY+6, 4, 4);
+        ctx.fillRect(a.x+18, pY+6, 4, 4);
+        ctx.shadowBlur = 0;
+      });
+
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = '#fff';
+      s.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+      
+      ctx.fillStyle = '#ff0055';
+      ctx.shadowColor = '#ff0055';
+      s.alienBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+      
+      ctx.shadowBlur = 0;
+      s.particles.forEach(p => {
+        ctx.fillStyle = p.col;
+        ctx.globalAlpha = p.life;
+        ctx.fillRect(p.x, p.y, 4, 4);
+      });
+      ctx.globalAlpha = 1;
+
+      animId = requestAnimationFrame(loop);
+    };
     loop();
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      cancelAnimationFrame(animationId);
+      window.removeEventListener('keydown', keyD);
+      window.removeEventListener('keyup', keyU);
+      cancelAnimationFrame(animId);
     };
-  }, []);
+  }, [showTutorial, updateHighScore]);
 
   return (
     <div className="space-invaders-container">
-      <div className="space-invaders-header">
-        <div>SCORE: {score}</div>
-        <div>SPACE INVADERS</div>
-      </div>
-      
-      <div style={{ position: 'relative' }}>
-        <canvas 
-          ref={canvasRef} 
-          width={800} 
-          height={600} 
-          className="space-invaders-canvas"
-        />
-        
-        {gameOver && (
-          <div className={`game-over-screen ${gameWon ? 'victory' : ''}`}>
-            <h2>{gameWon ? 'VICTORY' : 'GAME OVER'}</h2>
-            <p>Final Score: {score}</p>
-            <button className="restart-btn" onClick={initGame}>
-              PLAY AGAIN
-            </button>
+      {showTutorial ? (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'var(--bg-base)', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: 32, textAlign: 'center'
+        }}>
+          <h1 style={{ color: '#00ffcc', textShadow: '0 0 15px #00ffcc', marginBottom: 24, fontSize: '3rem' }}>SPACE INVADERS 2.0</h1>
+          <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 16, border: '1px solid var(--border)', maxWidth: 500 }}>
+            <h3 style={{ marginBottom: 16, color: 'var(--text-primary)' }}>Threat Assessment</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+              Intergalactic armada detected. Protect the sector by clearing waves of entities. The swarm intensifies after each iteration.
+            </p>
+            <ul style={{ color: 'var(--text-muted)', textAlign: 'left', marginBottom: 24, lineHeight: 1.6, paddingLeft: 24 }}>
+              <li><strong>Move:</strong> <kbd>A</kbd> <kbd>D</kbd> or Left/Right Arrows</li>
+              <li><strong>Fire:</strong> <kbd>SPACE</kbd> (3 active pulses max)</li>
+              <li><strong style={{color: '#ffea00'}}>Command UFO</strong>: High value target (+50 pts)</li>
+              <li><strong style={{color: '#ff0055'}}>Squid Class</strong>: Standard threat (+30 pts)</li>
+            </ul>
+            <button className="sign-in-btn" onClick={startGame} style={{
+              width: '100%', padding: '16px', borderRadius: 8, background: '#00ffcc',
+              color: '#000', fontWeight: 'bold', fontSize: '1.1rem', border: 'none', cursor: 'pointer',
+              boxShadow: '0 0 20px rgba(0, 255, 204, 0.4)'
+            }}>DEPLOY FIGHTER</button>
           </div>
-        )}
-      </div>
-      
-      <div className="controls-hint">
-        ← / → to Move | SPACE to shoot
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="space-invaders-header">
+            <div>RATING: {uiState.score}</div>
+            <div style={{color: 'var(--primary-color)'}}>WAVE: {uiState.level}</div>
+            <div className="high-score-display">TOP ACCURACY: {highScore}</div>
+          </div>
+          
+          <div className="canvas-wrapper">
+            <canvas ref={canvasRef} width={800} height={600} className="space-invaders-canvas" />
+            
+            {uiState.over && (
+              <div className="game-over-overlay" style={{ boxShadow: '0 0 30px #00ffcc' }}>
+                <h2 style={{ color: '#00ffcc', textShadow: '0 0 10px #00ffcc' }}>SIGNAL LOST</h2>
+                <p>Entities Cleared: {uiState.score}</p>
+                <p style={{fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: 8}}>Survived until Wave {uiState.level}</p>
+                <button className="pacman-btn" onClick={startGame} style={{marginTop: 16}}>RE-DEPLOY</button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
