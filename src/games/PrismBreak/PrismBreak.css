@@ -1,0 +1,97 @@
+.prism-break-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-base);
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-family: 'Space Mono', monospace;
+}
+
+.prism-header {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.prism-canvas {
+  background: #05050a;
+  border: 1px solid var(--border);
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  max-width: 100%;
+}
+
+.prism-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 20, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 40px;
+  text-align: center;
+}
+
+.prism-overlay h1 {
+  font-size: 4rem;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
+  margin-bottom: 40px;
+  font-style: italic;
+}
+
+.tutorial-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 32px;
+  border-radius: 16px;
+  max-width: 500px;
+}
+
+.tutorial-card p {
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.tutorial-card ul {
+  text-align: left;
+  list-style: none;
+  padding: 0;
+  margin-bottom: 32px;
+  color: var(--text-primary);
+}
+
+.tutorial-card li {
+  margin-bottom: 8px;
+}
+
+.start-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.start-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.game-over-text {
+  color: #ff3e3e;
+  font-size: 3rem;
+  margin-bottom: 30px;
+}

@@ -18,6 +18,10 @@ import ChessGame from './games/Chess/Chess';
 import SpaceInvaders from './games/SpaceInvaders/SpaceInvaders';
 import PacMan from './games/PacMan/PacMan';
 import OrbChase from './games/OrbChase/OrbChase';
+import NeonTetris from './games/NeonTetris/NeonTetris';
+import PrismBreak from './games/PrismBreak/PrismBreak';
+import NeonFusion from './games/NeonFusion/NeonFusion';
+
 
 // ── Theme Assets ─────────────────────────────────────────────
 import logoLight from './assets/logo-light.png';
@@ -37,6 +41,10 @@ import imgSortViz from './assets/games/sort-viz.png';
 import imgHexConnect from './assets/games/hex-connect.png';
 import imgChess from './assets/games/grandmaster-chess.png';
 import imgOrbChase from './assets/games/orb-chase.svg';
+import imgNeonTetris from './assets/games/neon-tetris.png';
+import imgPrismBreak from './assets/games/prism-break.png';
+import imgNeonFusion from './assets/games/neon-fusion.png';
+
 
 // ── Game Registry ───────────────────────────────────────────
 const GAMES = [
@@ -171,7 +179,39 @@ const GAMES = [
     component: OrbChase,
     status: 'active',
   },
+  {
+    id: 'neon-tetris',
+    title: 'Neon Tetris',
+    genre: 'Arcade / Puzzle',
+    desc: 'Classic block-stacking logic with a synthetic neon glow and ghost piece tracking.',
+    icon: '🧱',
+    image: imgNeonTetris,
+    component: NeonTetris,
+    status: 'active',
+  },
+  {
+    id: 'prism-break',
+    title: 'Prism Break',
+    genre: 'Arcade / Physics',
+    desc: 'Demolish the spectral field. A high-octane breakout experience with intense particles.',
+    icon: '💎',
+    image: imgPrismBreak,
+    component: PrismBreak,
+    status: 'active',
+  },
+  {
+    id: 'neon-fusion',
+    title: 'Neon Fusion',
+    genre: 'Cognitive / Puzzle',
+    desc: 'Merge the spectra to reach the singularity. A premium glassmorphic 2048 experience.',
+    icon: '⚛️',
+    image: imgNeonFusion,
+    component: NeonFusion,
+    status: 'active',
+  },
+
 ];
+
 
 // ── Material Icon helper ────────────────────────────────────
 const Icon = ({ name, className = '' }) => (
