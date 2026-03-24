@@ -24,6 +24,7 @@ import NeonFusion from './games/NeonFusion/NeonFusion';
 import TheGlitch from './games/TheGlitch/TheGlitch';
 import OrbitRoyale from './games/OrbitRoyale/OrbitRoyale';
 import VectorRace from './games/VectorRace/VectorRace';
+import InfectionTag from './games/InfectionTag/InfectionTag';
 
 // ── Theme Assets ─────────────────────────────────────────────
 import logoLight from './assets/logo-light.png';
@@ -46,6 +47,7 @@ import imgOrbChase from './assets/games/orb-chase.svg';
 import imgNeonTetris from './assets/games/neon-tetris.png';
 import imgPrismBreak from './assets/games/prism-break.png';
 import imgNeonFusion from './assets/games/neon-fusion.png';
+import imgInfectionTag from './assets/games/infection-tag.png';
 import imgTheGlitch from './assets/games/the-glitch.png';
 import imgOrbitRoyale from './assets/games/orbit-royale.png';
 import imgVectorRace from './assets/games/vector-race.png';
@@ -242,6 +244,16 @@ const GAMES = [
     icon: '🏎️',
     image: imgVectorRace,
     component: VectorRace,
+    status: 'active',
+  },
+  {
+    id: 'infection-tag',
+    title: 'Infection Tag',
+    genre: 'Multiplayer / Action',
+    desc: 'Real-time WebSocket multiplayer tag! Run from the glowing infected, or spread the virus.',
+    icon: '🦠',
+    image: imgInfectionTag,
+    component: InfectionTag,
     status: 'active',
   },
 ];

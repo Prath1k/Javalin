@@ -1,0 +1,51 @@
+.infection-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-base);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  align-items: center;
+  justify-content: center;
+}
+
+.infection-header {
+  display: flex;
+  justify-content: space-between;
+  width: 1000px;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  box-sizing: border-box;
+}
+
+.status-indicator {
+  font-weight: bold;
+}
+
+.status-indicator.online {
+  color: #00ff00;
+  text-shadow: 0 0 10px #00ff00;
+}
+
+.status-indicator.offline {
+  color: #ff3e3e;
+  animation: pulse 1s infinite alternate;
+}
+
+.phaser-container {
+  width: 1000px;
+  height: 700px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.infection-rules {
+  color: #ff00ff;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
