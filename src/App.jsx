@@ -36,6 +36,7 @@ import imgNeonPong from './assets/games/neon-pong.png';
 import imgSortViz from './assets/games/sort-viz.png';
 import imgHexConnect from './assets/games/hex-connect.png';
 import imgChess from './assets/games/grandmaster-chess.png';
+import imgOrbChase from './assets/games/orb-chase.svg';
 
 // ── Game Registry ───────────────────────────────────────────
 const GAMES = [
@@ -166,6 +167,7 @@ const GAMES = [
     genre: '1P / Reflex',
     desc: 'Single-player precision click sprint. Build combos while the target speeds up.',
     icon: '🎯',
+    image: imgOrbChase,
     component: OrbChase,
     status: 'active',
   },
