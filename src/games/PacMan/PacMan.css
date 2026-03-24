@@ -1,4 +1,8 @@
 .pacman-container {
+  --touch-accent: #facc15;
+  --touch-bg: #111318;
+  --touch-text: #f8fafc;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -160,30 +164,6 @@
 .mobile-row {
   display: flex;
   gap: 14px;
-}
-
-.mobile-controls button,
-.mc-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  font-size: 1.35rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-controls button:active,
-.mc-btn:active {
-  background: var(--bg-hover);
-  transform: scale(0.95);
 }
 
 @media (min-width: 768px) {

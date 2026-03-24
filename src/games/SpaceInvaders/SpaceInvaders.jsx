@@ -77,6 +77,25 @@ export default function SpaceInvaders() {
     setShowTutorial(false);
   };
 
+  const setMoveKey = (direction, isPressed) => {
+    const k = stateRef.current.keys;
+    if (direction === 'left') k.ArrowLeft = isPressed;
+    if (direction === 'right') k.ArrowRight = isPressed;
+  };
+
+  const fireLaser = () => {
+    const s = stateRef.current;
+    if (s.bullets.length < 3 && !s.isGameOver) {
+      s.bullets.push({
+        x: s.player.x + 20,
+        y: s.player.y,
+        width: 4,
+        height: 16,
+        speed: 10,
+      });
+    }
+  };
+
   useEffect(() => {
     if (showTutorial) return;
     const canvas = canvasRef.current;
@@ -90,12 +109,7 @@ export default function SpaceInvaders() {
       if (['ArrowRight', 'd', 'D'].includes(e.key)) k.ArrowRight = true;
       if ([' ', 'Spacebar'].includes(e.key)) {
         k.Space = true;
-        if (stateRef.current.bullets.length < 3 && !stateRef.current.isGameOver) {
-          stateRef.current.bullets.push({
-            x: stateRef.current.player.x + 20, y: stateRef.current.player.y,
-            width: 4, height: 16, speed: 10
-          });
-        }
+        fireLaser();
       }
     };
     const keyU = e => {
@@ -316,6 +330,35 @@ export default function SpaceInvaders() {
                 <button className="pacman-btn" onClick={startGame} style={{marginTop: 16}}>RE-DEPLOY</button>
               </div>
             )}
+          </div>
+
+          <div className="space-controls-hint game-controls-hint">Desktop: A/D or Arrow Keys to move, Space to fire. Mobile: use control pad.</div>
+
+          <div className="space-mobile-controls game-touch-controls" role="group" aria-label="Space Invaders touch controls">
+            <button
+              className="space-ctrl-btn game-touch-btn compact"
+              onPointerDown={(e) => { e.preventDefault(); setMoveKey('left', true); }}
+              onPointerUp={() => setMoveKey('left', false)}
+              onPointerCancel={() => setMoveKey('left', false)}
+              onPointerLeave={() => setMoveKey('left', false)}
+            >
+              ◀
+            </button>
+            <button
+              className="space-ctrl-btn fire game-touch-btn"
+              onPointerDown={(e) => { e.preventDefault(); fireLaser(); }}
+            >
+              FIRE
+            </button>
+            <button
+              className="space-ctrl-btn game-touch-btn compact"
+              onPointerDown={(e) => { e.preventDefault(); setMoveKey('right', true); }}
+              onPointerUp={() => setMoveKey('right', false)}
+              onPointerCancel={() => setMoveKey('right', false)}
+              onPointerLeave={() => setMoveKey('right', false)}
+            >
+              ▶
+            </button>
           </div>
         </>
       )}

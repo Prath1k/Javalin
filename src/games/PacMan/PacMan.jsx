@@ -528,14 +528,14 @@ export default function PacMan() {
       </div>
 
       <div className="controls-hint">
-        <div className="controls-hint-text">Use Arrow Keys or W A S D to move</div>
+        <div className="controls-hint-text game-controls-hint">Use Arrow Keys or W A S D to move</div>
         
-        <div className="mobile-controls">
-          <button className="mc-btn" onTouchStart={() => triggerDir('up')}>⬆️</button>
-          <div className="mobile-row">
-            <button className="mc-btn" onTouchStart={() => triggerDir('left')}>⬅️</button>
-            <button className="mc-btn" onTouchStart={() => triggerDir('down')}>⬇️</button>
-            <button className="mc-btn" onTouchStart={() => triggerDir('right')}>➡️</button>
+        <div className="mobile-controls game-touch-controls" role="group" aria-label="Pac-Man touch controls">
+          <button className="game-touch-btn compact" onTouchStart={() => triggerDir('up')}>⬆</button>
+          <div className="mobile-row game-touch-row">
+            <button className="game-touch-btn compact" onTouchStart={() => triggerDir('left')}>⬅</button>
+            <button className="game-touch-btn compact" onTouchStart={() => triggerDir('down')}>⬇</button>
+            <button className="game-touch-btn compact" onTouchStart={() => triggerDir('right')}>➡</button>
           </div>
         </div>
       </div>

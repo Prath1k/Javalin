@@ -692,6 +692,60 @@
   font-weight: 500;
 }
 
+/* ── Shared Game Touch Controls ─────────────────────────── */
+.game-controls-hint {
+  width: min(100%, 960px);
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.85rem;
+  margin-top: 12px;
+}
+
+.game-touch-controls {
+  --touch-accent: var(--accent);
+  --touch-accent-soft: color-mix(in srgb, var(--touch-accent) 45%, transparent);
+  --touch-bg: var(--bg-card);
+  --touch-text: var(--text-primary);
+
+  display: none;
+  width: min(100%, 960px);
+  margin-top: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.game-touch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.game-touch-btn {
+  min-width: 64px;
+  height: 52px;
+  border: 1px solid var(--touch-accent-soft);
+  background: color-mix(in srgb, var(--touch-bg) 88%, black);
+  color: var(--touch-text);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--touch-accent) 18%, transparent);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-touch-btn.compact {
+  min-width: 56px;
+  font-size: 1.1rem;
+}
+
+.game-touch-btn:active {
+  transform: scale(0.96);
+}
+
 /* ── Mobile & Responsive ────────────────────────────────── */
 
 .menu-toggle {
@@ -776,6 +830,10 @@
     padding: 16px;
   }
 
+  .game-touch-controls {
+    display: flex;
+  }
+
   .hub-header {
     margin-bottom: 32px;
   }
@@ -827,5 +885,9 @@
 
   .content-area.game-content {
     padding: 12px;
+  }
+
+  .game-controls-hint {
+    font-size: 0.8rem;
   }
 }

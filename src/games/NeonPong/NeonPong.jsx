@@ -31,6 +31,12 @@ export default function NeonPong() {
     setShowTutorial(false);
   };
 
+  const setPaddleKey = (direction, isPressed) => {
+    const k = stateRef.current.keys;
+    if (direction === 'up') k.ArrowUp = isPressed;
+    if (direction === 'down') k.ArrowDown = isPressed;
+  };
+
   const endRally = (winner) => {
       const s = stateRef.current;
       if (winner === 'player') {
@@ -247,6 +253,29 @@ export default function NeonPong() {
                 <button className="pacman-btn" style={{background: '#ff00ff', boxShadow: '0 0 15px rgba(255,0,255,0.4)', marginTop: 24}} onClick={startGame}>RECONNECT</button>
               </div>
             )}
+          </div>
+
+          <div className="pong-controls-hint game-controls-hint">Desktop: W/S or Arrow Keys. Mobile: hold UP or DOWN.</div>
+
+          <div className="pong-mobile-controls game-touch-controls" role="group" aria-label="Neon Pong touch controls">
+            <button
+              className="pong-ctrl-btn game-touch-btn compact"
+              onPointerDown={(e) => { e.preventDefault(); setPaddleKey('up', true); }}
+              onPointerUp={() => setPaddleKey('up', false)}
+              onPointerCancel={() => setPaddleKey('up', false)}
+              onPointerLeave={() => setPaddleKey('up', false)}
+            >
+              UP
+            </button>
+            <button
+              className="pong-ctrl-btn game-touch-btn compact"
+              onPointerDown={(e) => { e.preventDefault(); setPaddleKey('down', true); }}
+              onPointerUp={() => setPaddleKey('down', false)}
+              onPointerCancel={() => setPaddleKey('down', false)}
+              onPointerLeave={() => setPaddleKey('down', false)}
+            >
+              DOWN
+            </button>
           </div>
         </>
       )}
