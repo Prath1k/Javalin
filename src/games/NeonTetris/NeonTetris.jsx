@@ -28,25 +28,51 @@ export default function NeonTetris() {
 
   const [grid, setGrid] = useState(Array.from({ length: ROWS }, () => Array(COLS).fill(0)));
   const [activePiece, setActivePiece] = useState(null);
+  const [nextPiece, setNextPiece] = useState(() => RANDOM_PIECE());
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   const [shaking, setShaking] = useState(false);
+  const [particles, setParticles] = useState([]);
+  const [landingPulses, setLandingPulses] = useState([]);
 
-  const gameLoopRef = useRef();
   const activePieceRef = useRef();
   activePieceRef.current = activePiece;
+  const particleIdRef = useRef(0);
 
   const spawnPiece = useCallback(() => {
-    const piece = RANDOM_PIECE();
+    const piece = nextPiece;
+    const next = RANDOM_PIECE();
+    setNextPiece(next);
+    
     if (checkCollision(piece.x, piece.y, piece.shape)) {
       setGameOver(true);
       if (score > highScore) updateHighScore('neon-tetris', score);
     } else {
       setActivePiece(piece);
     }
-  }, [score, highScore, updateHighScore]);
+  }, [nextPiece, score, highScore, updateHighScore]);
+
+  const spawnParticles = (row, color) => {
+    const newParticles = [];
+    for (let c = 0; c < COLS; c++) {
+      for (let i = 0; i < 4; i++) {
+        newParticles.push({
+          id: particleIdRef.current++,
+          x: (c / COLS) * 100 + (Math.random() * 5),
+          y: (row / ROWS) * 100 + (Math.random() * 5),
+          dx: (Math.random() - 0.5) * 100 + 'px',
+          dy: (Math.random() - 0.5) * 100 + 'px',
+          color
+        });
+      }
+    }
+    setParticles(prev => [...prev.slice(-50), ...newParticles]);
+    setTimeout(() => {
+      setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
+    }, 600);
+  };
 
   const checkCollision = (x, y, shape, currentGrid = grid) => {
     for (let r = 0; r < shape.length; r++) {
@@ -85,34 +111,48 @@ export default function NeonTetris() {
     if (!s) return;
     
     const newGrid = grid.map(row => [...row]);
+    let landingCells = [];
     s.shape.forEach((row, ri) => {
       row.forEach((cell, ci) => {
         if (cell && s.y + ri >= 0) {
           newGrid[s.y + ri][s.x + ci] = s.color;
+          landingCells.push({ r: s.y + ri, c: s.x + ci });
         }
       });
     });
 
+    // Create landing pulses
+    setLandingPulses(prev => [...prev, ...landingCells]);
+    setTimeout(() => {
+      setLandingPulses(prev => prev.filter(lp => !landingCells.find(lc => lc.r === lp.r && lc.c === lp.c)));
+    }, 300);
+
     // Clear lines
     let cleared = 0;
-    const filteredGrid = newGrid.filter(row => {
-      const isFull = row.every(cell => cell !== 0);
-      if (isFull) cleared++;
-      return !isFull;
-    });
+    const finalGrid = [];
+    for (let r = 0; r < ROWS; r++) {
+      const isFull = newGrid[r].every(cell => cell !== 0);
+      if (isFull) {
+        cleared++;
+        spawnParticles(r, '#fff');
+      } else {
+        finalGrid.push(newGrid[r]);
+      }
+    }
 
-    while (filteredGrid.length < ROWS) {
-      filteredGrid.unshift(Array(COLS).fill(0));
+    while (finalGrid.length < ROWS) {
+      finalGrid.unshift(Array(COLS).fill(0));
     }
 
     if (cleared > 0) {
-      setScore(prev => prev + [0, 100, 300, 500, 800][cleared] * level);
+      setScore(prev => prev + [0, 100, 300, 500, 1000][cleared] * level);
       setShaking(true);
-      setTimeout(() => setShaking(false), 200);
+      setTimeout(() => setShaking(false), 300);
+      if (score > 0 && score % 1000 === 0) setLevel(l => l + 1);
     }
 
-    setGrid(filteredGrid);
-    spawnPiece();
+    setGrid(finalGrid);
+    setActivePiece(null);
   };
 
   const handleKeyDown = useCallback((e) => {
@@ -123,15 +163,15 @@ export default function NeonTetris() {
     if (e.key === 'ArrowUp') rotatePiece();
     if (e.key === ' ') {
       // Hard drop
+      if (!activePieceRef.current) return;
       let tempY = activePieceRef.current.y;
       while (!checkCollision(activePieceRef.current.x, tempY + 1, activePieceRef.current.shape)) {
         tempY++;
       }
       setActivePiece({ ...activePieceRef.current, y: tempY });
-      // We need to wait a tick or manually lock it
-      setTimeout(lockPiece, 0);
+      setTimeout(lockPiece, 50);
     }
-    if (e.key === 'p') setIsPaused(!isPaused);
+    if (e.key === 'p' || e.key === 'P') setIsPaused(!isPaused);
   }, [grid, activePiece, gameOver, isPaused]);
 
   useEffect(() => {
@@ -155,9 +195,11 @@ export default function NeonTetris() {
     setGrid(Array.from({ length: ROWS }, () => Array(COLS).fill(0)));
     setScore(0);
     setLevel(1);
+    setNextPiece(RANDOM_PIECE());
     setGameOver(false);
     setIsPaused(false);
-    spawnPiece();
+    setParticles([]);
+    setActivePiece(null);
   };
 
   // Ghost piece calculation
@@ -173,9 +215,31 @@ export default function NeonTetris() {
   return (
     <div className={`neon-tetris-container ${shaking ? 'screen-shake' : ''}`}>
       <div className="tetris-sidebar">
+        {/* Next Piece Display */}
+        <div className="next-piece-box">
+          <label>NEXT PIECE</label>
+          <div className="next-piece-grid">
+            {Array.from({ length: 4 }).map((_, r) => (
+              Array.from({ length: 4 }).map((_, c) => {
+                const isPart = nextPiece.shape[r] && nextPiece.shape[r][c];
+                return (
+                  <div 
+                    key={`${r}-${c}`}
+                    className="tetris-cell"
+                    style={{ 
+                      backgroundColor: isPart ? nextPiece.color : 'transparent',
+                      boxShadow: isPart ? `0 0 10px ${nextPiece.color}` : 'none'
+                    }}
+                  />
+                )
+              })
+            ))}
+          </div>
+        </div>
+
         <div className="stat-box">
           <label>SCORE</label>
-          <div className="value">{score}</div>
+          <div className="value">{score.toLocaleString()}</div>
         </div>
         <div className="stat-box">
           <label>LEVEL</label>
@@ -183,56 +247,88 @@ export default function NeonTetris() {
         </div>
         <div className="stat-box highlight">
           <label>BEST</label>
-          <div className="value">{highScore}</div>
+          <div className="value">{highScore.toLocaleString()}</div>
         </div>
-        <button className="reset-btn" onClick={resetGame}>REBOOT</button>
+        <button className="reset-btn" onClick={resetGame}>REBOOT SYSTEM</button>
       </div>
 
-      <div className="tetris-board">
-        {grid.map((row, ri) => (
-          <div key={ri} className="tetris-row">
-            {row.map((cell, ci) => {
-              let color = cell;
-              let isGhost = false;
-              let isActive = false;
+      <div className="tetris-board-wrapper">
+        <div className="tetris-board">
+          {grid.map((row, ri) => (
+            <div key={ri} className="tetris-row">
+              {row.map((cell, ci) => {
+                let color = cell;
+                let isGhost = false;
+                let isActive = false;
+                const isLanding = landingPulses.some(p => p.r === ri && p.c === ci);
 
-              if (activePiece) {
-                const ghostY = getGhostY();
-                const pr = ri - activePiece.y;
-                const pc = ci - activePiece.x;
-                const gr = ri - ghostY;
-                
-                if (pr >= 0 && pr < activePiece.shape.length && pc >= 0 && pc < activePiece.shape[0].length && activePiece.shape[pr][pc]) {
-                  color = activePiece.color;
-                  isActive = true;
-                } else if (gr >= 0 && gr < activePiece.shape.length && pc >= 0 && pc < activePiece.shape[0].length && activePiece.shape[gr][pc]) {
-                  color = activePiece.color;
-                  isGhost = true;
+                if (activePiece) {
+                  const ghostY = getGhostY();
+                  const pr = ri - activePiece.y;
+                  const pc = ci - activePiece.x;
+                  const gr = ri - ghostY;
+                  
+                  if (pr >= 0 && pr < activePiece.shape.length && pc >= 0 && pc < activePiece.shape[0].length && activePiece.shape[pr][pc]) {
+                    color = activePiece.color;
+                    isActive = true;
+                  } else if (gr >= 0 && gr < activePiece.shape.length && pc >= 0 && pc < activePiece.shape[0].length && activePiece.shape[gr][pc]) {
+                    color = activePiece.color;
+                    isGhost = true;
+                    isActive = false;
+                  }
                 }
-              }
 
-              return (
-                <div 
-                  key={ci} 
-                  className={`tetris-cell ${isGhost ? 'ghost' : ''} ${isActive ? 'active' : ''}`}
-                  style={{ backgroundColor: color !== 0 ? color : 'transparent', boxShadow: color !== 0 && !isGhost ? `0 0 10px ${color}` : 'none' }}
-                />
-              );
-            })}
-          </div>
-        ))}
-        
-        {gameOver && (
-          <div className="game-over-overlay">
-            <h2>SYSTEM OVERLOAD</h2>
-            <p>Score: {score}</p>
-            <button onClick={resetGame}>REINITIALIZE</button>
-          </div>
-        )}
+                return (
+                  <div 
+                    key={ci} 
+                    className={`tetris-cell ${isGhost ? 'ghost' : ''} ${isActive || cell ? 'filled' : ''} ${isActive ? 'active' : ''}`}
+                    style={{ 
+                      backgroundColor: color !== 0 ? color : 'transparent', 
+                      boxShadow: (color !== 0 && !isGhost) ? `0 0 15px ${color}` : 'none' 
+                    }}
+                  >
+                    {isLanding && <div className="landing-pulse" />}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* Particles */}
+          {particles.map(p => (
+            <div 
+              key={p.id}
+              className="tetris-particle"
+              style={{ 
+                left: `${p.x}%`, 
+                top: `${p.y}%`, 
+                backgroundColor: p.color,
+                '--dx': p.dx,
+                '--dy': p.dy
+              }}
+            />
+          ))}
+          
+          {gameOver && (
+            <div className="game-over-overlay">
+              <h2>SYSTEM OVERLOAD</h2>
+              <p>Score: {score.toLocaleString()}</p>
+              <button onClick={resetGame}>REINITIALIZE CORE</button>
+            </div>
+          )}
+
+          {isPaused && !gameOver && (
+            <div className="game-over-overlay">
+              <h2 style={{ color: 'var(--accent)', textShadow: '0 0 20px var(--accent-glow)' }}>PAUSED</h2>
+              <p>System state preserved.</p>
+              <button onClick={() => setIsPaused(false)} style={{ background: 'var(--accent)', color: '#000' }}>RESUME</button>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="tetris-controls-hint game-controls-hint">
-        Arrows: Move/Rotate | Space: Hard Drop | P: Pause
+      <div className="tetris-controls-hint">
+        ARROWS: SHIFT/ROTATE | SPACE: DROP | P: SUSPEND
       </div>
     </div>
   );
