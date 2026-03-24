@@ -6,7 +6,7 @@
   width: 100%;
   min-height: 100%;
   height: auto;
-  padding: 10px 20px;
+  padding: clamp(10px, 2vw, 20px);
   background: radial-gradient(circle at center, rgba(30, 27, 75, 0.4) 0%, transparent 70%);
 }
 
@@ -170,7 +170,7 @@
 .grid-container {
   position: relative;
   width: 95%;
-  max-width: calc(100vh - 220px);
+  max-width: min(calc(100vh - 220px), 760px, 100%);
   aspect-ratio: 1 / 1;
   margin: 0 auto;
   flex-shrink: 0;
@@ -368,6 +368,7 @@
 @media (max-width: 480px) {
   .neon-title { font-size: 1.8rem; }
   .score-board { gap: 10px; }
+  .grid-container { width: 100%; }
   .score-box { min-width: 90px; padding: 8px 12px; }
   .score-box .value { font-size: 1.2rem; }
   .game-over-text { font-size: 1.5rem; }

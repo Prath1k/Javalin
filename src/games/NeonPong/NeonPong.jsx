@@ -207,10 +207,10 @@ export default function NeonPong() {
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           background: 'var(--bg-base)', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: 32, textAlign: 'center'
+          alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: 'clamp(16px, 4vw, 32px)', textAlign: 'center'
         }}>
-          <h1 style={{ color: '#ff00ff', textShadow: '0 0 20px #ff00ff', marginBottom: 24, fontSize: '3.5rem', fontStyle: 'italic' }}>NEON PONG</h1>
-          <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 16, border: '1px solid #330033', maxWidth: 500 }}>
+          <h1 style={{ color: '#ff00ff', textShadow: '0 0 20px #ff00ff', marginBottom: 24, fontSize: 'clamp(2rem, 9vw, 3.5rem)', fontStyle: 'italic' }}>NEON PONG</h1>
+          <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 16, border: '1px solid #330033', maxWidth: 560, width: '100%' }}>
             <h3 style={{ marginBottom: 16, color: '#fff' }}>Protocol: Endless AI Volley</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.5 }}>
               Deflect the core back to the synthetic intelligence. The rally speed and AI tracking algorithm will intensify after every successful volley. 

@@ -444,7 +444,7 @@ function GamePlayer({ game, onClose, onFullscreen, isFullscreen }) {
   }
 
   return (
-    <div className="content-area" style={{ display: 'flex', flexDirection: 'column', padding: '24px 32px' }}>
+    <div className="content-area game-content">
       {inner}
     </div>
   );

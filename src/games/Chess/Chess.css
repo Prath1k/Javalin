@@ -6,7 +6,7 @@
   width: 100%;
   min-height: 100%;
   height: auto;
-  padding: 40px 20px;
+  padding: clamp(16px, 3vw, 40px) 20px;
   background-color: #050508;
   color: #fff;
   font-family: 'Inter', sans-serif;
@@ -16,7 +16,7 @@
   text-align: center;
   margin-bottom: 20px;
   width: 100%;
-  max-width: 90vh;
+  max-width: min(90vh, 860px, 100%);
 }
 
 .chess-title {
@@ -66,7 +66,7 @@
 .chess-board-wrapper {
   position: relative;
   width: 100%;
-  max-width: 90vh;
+  max-width: min(90vh, 860px, 100%);
   max-height: 80vh;
   aspect-ratio: 1;
   flex-shrink: 1;
@@ -180,6 +180,10 @@
     /* For smaller screens, don't bound by 90vh specifically if width is smaller */
     max-width: 95vw;
     max-height: 95vw;
+  }
+
+  .chess-title {
+    font-size: 1.45rem;
   }
 }
 

@@ -6,7 +6,7 @@
   width: 100%;
   min-height: 100%;
   height: auto;
-  padding: 40px 20px;
+  padding: clamp(16px, 3vw, 40px) 20px;
 }
 
 .game-header {
@@ -114,8 +114,8 @@
 
 .surface {
   width: 100%;
-  max-width: 60vh;
-  min-width: 250px;
+  max-width: min(60vh, 620px, 100%);
+  min-width: min(250px, 100%);
   aspect-ratio: 1/1;
   height: auto;
   flex-shrink: 1;
@@ -285,8 +285,8 @@
 
 @media (max-width: 480px) {
   .surface {
-    width: 250px;
-    height: 250px;
+    width: min(250px, 100%);
+    height: auto;
   }
   .speed-ring {
     width: 230px;

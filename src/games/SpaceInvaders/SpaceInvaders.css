@@ -3,35 +3,38 @@
   flex-direction: column;
   align-items: center;
   background-color: #05050f;
-  min-height: 100vh;
-  padding: 20px;
+  min-height: 100%;
+  width: 100%;
+  padding: clamp(12px, 2vw, 20px);
   font-family: 'Courier New', Courier, monospace;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .space-invaders-header {
   display: flex;
   justify-content: space-between;
-  width: 800px;
-  font-size: 24px;
+  width: min(100%, 960px);
+  font-size: clamp(0.85rem, 2.1vw, 1.5rem);
   color: #fff;
   margin-bottom: 20px;
-  padding: 10px 20px;
+  padding: 10px 14px;
   background: rgba(10, 10, 26, 0.8);
   border: 1px solid #1a1a3a;
   border-radius: 8px;
   box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.high-score-display {
+.space-invaders-container .high-score-display {
   color: #ffea00;
 }
 
-.canvas-wrapper {
+.space-invaders-container .canvas-wrapper {
   position: relative;
-  width: 800px;
-  height: 600px;
+  width: min(100%, 960px);
+  aspect-ratio: 4 / 3;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 204, 0.1);
@@ -41,9 +44,11 @@
 .space-invaders-canvas {
   display: block;
   background: transparent;
+  width: 100%;
+  height: 100%;
 }
 
-.game-over-overlay {
+.space-invaders-container .game-over-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -58,18 +63,18 @@
   z-index: 100;
 }
 
-.game-over-overlay h2 {
+.space-invaders-container .game-over-overlay h2 {
   font-size: 36px;
   margin: 0 0 20px 0;
   text-shadow: 0 0 10px #00ffcc;
 }
 
-.game-over-overlay p {
+.space-invaders-container .game-over-overlay p {
   font-size: 24px;
   margin: 10px 0;
 }
 
-.game-over-overlay .pacman-btn {
+.space-invaders-container .game-over-overlay .pacman-btn {
   background: #00ffcc;
   color: #000;
   border: none;
@@ -82,7 +87,27 @@
   transition: all 0.3s ease;
 }
 
-.game-over-overlay .pacman-btn:hover {
+.space-invaders-container .game-over-overlay .pacman-btn:hover {
   box-shadow: 0 0 25px rgba(0, 255, 204, 0.8);
   transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .space-invaders-header {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .space-invaders-container .game-over-overlay {
+    width: min(90%, 420px);
+    padding: 22px;
+  }
+
+  .space-invaders-container .game-over-overlay h2 {
+    font-size: clamp(1.35rem, 7vw, 2rem);
+  }
+
+  .space-invaders-container .game-over-overlay p {
+    font-size: clamp(0.9rem, 3.8vw, 1.1rem);
+  }
 }

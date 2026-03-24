@@ -6,7 +6,7 @@
   color: #00ff41;
   font-family: 'Courier New', Courier, monospace;
   position: relative;
-  padding: 20px;
+  padding: clamp(12px, 2.4vw, 20px);
   display: flex;
   flex-direction: column;
 }
@@ -117,7 +117,7 @@
 }
 
 .instructions {
-  max-width: 90vh; /* scaled max-width */
+  max-width: min(90vh, 860px, 100%); /* scaled max-width */
   line-height: 1.5;
   margin-bottom: 40px;
   color: #8cbaa0;
@@ -338,5 +338,10 @@
   }
   .matrix-column {
     font-size: 10px;
+  }
+
+  .instructions {
+    margin-bottom: 24px;
+    font-size: 0.9rem;
   }
 }

@@ -29,7 +29,7 @@
 
 .sweeper-header {
   width: 90%;
-  max-width: 90vh; /* Scaled max width */
+  max-width: min(90vh, 860px); /* Scaled max width */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -248,6 +248,11 @@
 }
 
 @media (max-width: 500px) {
+  .sweeper-header {
+    width: 100%;
+    padding: 12px;
+  }
+
   .grid-cell {
     width: 28px;
     height: 28px;

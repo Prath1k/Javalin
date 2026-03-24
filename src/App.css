@@ -333,6 +333,13 @@
   padding: 48px 40px;
 }
 
+.content-area.game-content {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  min-height: 0;
+}
+
 .content-area::-webkit-scrollbar { width: 4px; }
 .content-area::-webkit-scrollbar-track { background: transparent; }
 .content-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -593,6 +600,12 @@
   min-height: 100%;
 }
 
+/* Ensure embedded game roots can scale and scroll safely inside the console. */
+.console-viewport > * {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .console-viewport::-webkit-scrollbar { width: 6px; }
 .console-viewport::-webkit-scrollbar-track { background: transparent; }
 .console-viewport::-webkit-scrollbar-thumb { background: var(--border-focus); border-radius: 3px; }
@@ -759,6 +772,10 @@
     padding: 24px 16px;
   }
 
+  .content-area.game-content {
+    padding: 16px;
+  }
+
   .hub-header {
     margin-bottom: 32px;
   }
@@ -806,5 +823,9 @@
 @media (max-width: 480px) {
   .game-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .content-area.game-content {
+    padding: 12px;
   }
 }

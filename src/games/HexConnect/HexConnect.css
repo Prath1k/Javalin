@@ -14,7 +14,7 @@
 
 .hex-header {
   width: 100%;
-  max-width: 90vh; /* Scaled max width */
+  max-width: min(90vh, 860px, 100%); /* Scaled max width */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -106,7 +106,7 @@
 .hex-gameboard {
   position: relative;
   width: 100%;
-  max-width: 80vh;
+  max-width: min(80vh, 760px, 100%);
   max-height: 80vh;
   aspect-ratio: 1;
   flex-shrink: 1;
@@ -231,6 +231,21 @@
 }
 
 .mt-4 { margin-top: 16px; }
+
+@media (max-width: 680px) {
+  .hex-header {
+    padding: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .hex-title {
+    text-align: center;
+    width: 100%;
+  }
+}
 
 @keyframes fadeIn {
   from { opacity: 0; }

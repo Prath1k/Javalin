@@ -276,10 +276,10 @@ export default function SpaceInvaders() {
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           background: 'var(--bg-base)', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: 32, textAlign: 'center'
+          alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: 'clamp(16px, 4vw, 32px)', textAlign: 'center'
         }}>
-          <h1 style={{ color: '#00ffcc', textShadow: '0 0 15px #00ffcc', marginBottom: 24, fontSize: '3rem' }}>SPACE INVADERS 2.0</h1>
-          <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 16, border: '1px solid var(--border)', maxWidth: 500 }}>
+          <h1 style={{ color: '#00ffcc', textShadow: '0 0 15px #00ffcc', marginBottom: 24, fontSize: 'clamp(1.8rem, 8vw, 3rem)' }}>SPACE INVADERS 2.0</h1>
+          <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 16, border: '1px solid var(--border)', maxWidth: 560, width: '100%' }}>
             <h3 style={{ marginBottom: 16, color: 'var(--text-primary)' }}>Threat Assessment</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
               Intergalactic armada detected. Protect the sector by clearing waves of entities. The swarm intensifies after each iteration.
