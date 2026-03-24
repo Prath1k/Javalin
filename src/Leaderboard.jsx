@@ -13,7 +13,8 @@ export default function Leaderboard() {
     { id: 'space-invaders', name: 'Space Inv' },
     { id: 'retro-snake', name: 'Snake' },
     { id: 'terminal-hacker', name: 'Hacker' },
-    { id: 'rhythm-clicker', name: 'Rhythm' }
+    { id: 'rhythm-clicker', name: 'Rhythm' },
+    { id: 'orb-chase', name: 'Orb Chase' }
   ];
 
   useEffect(() => {

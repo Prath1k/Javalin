@@ -17,6 +17,7 @@ import HexConnect from './games/HexConnect/HexConnect';
 import ChessGame from './games/Chess/Chess';
 import SpaceInvaders from './games/SpaceInvaders/SpaceInvaders';
 import PacMan from './games/PacMan/PacMan';
+import OrbChase from './games/OrbChase/OrbChase';
 
 // ── Theme Assets ─────────────────────────────────────────────
 import logoLight from './assets/logo-light.png';
@@ -157,6 +158,15 @@ const GAMES = [
     icon: '♚',
     image: imgChess,
     component: ChessGame,
+    status: 'active',
+  },
+  {
+    id: 'orb-chase',
+    title: 'Orb Chase',
+    genre: '1P / Reflex',
+    desc: 'Single-player precision click sprint. Build combos while the target speeds up.',
+    icon: '🎯',
+    component: OrbChase,
     status: 'active',
   },
 ];

@@ -1,0 +1,98 @@
+.orb-chase-wrap {
+  color: #e8f7ff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px;
+  height: 100%;
+}
+
+.orb-chase-header h2 {
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.orb-chase-header p {
+  margin: 4px 0 0;
+  color: #9ac6d8;
+}
+
+.orb-chase-hud {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.orb-chip {
+  border: 1px solid #1d3651;
+  background: linear-gradient(180deg, #11273a, #0a1724);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.orb-chip span {
+  display: block;
+  color: #87a8bc;
+  font-size: 0.75rem;
+}
+
+.orb-chip strong {
+  font-size: 1.2rem;
+}
+
+.orb-arena {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+  border: 1px solid #21405f;
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(44, 147, 255, 0.3), transparent 35%),
+    radial-gradient(circle at 80% 60%, rgba(0, 255, 183, 0.22), transparent 32%),
+    #050b13;
+}
+
+.orb-target {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  background: radial-gradient(circle at 30% 30%, #d8f6ff, #42d6ff 55%, #0075b0);
+  box-shadow: 0 0 18px #42d6ff;
+}
+
+.orb-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(4, 9, 16, 0.8);
+}
+
+.orb-start {
+  margin-top: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: #34d6ff;
+  color: #032033;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.orb-help {
+  margin: 0;
+  color: #7f99aa;
+}
+
+@media (max-width: 900px) {
+  .orb-chase-hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
