@@ -1,0 +1,168 @@
+.glitch-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #050510;
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Scanline Overlay */
+.glitch-container::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%, 
+      rgba(0, 0, 0, 0.25) 50%
+    ), 
+    linear-gradient(
+      90deg, 
+      rgba(255, 0, 0, 0.06), 
+      rgba(0, 255, 0, 0.02), 
+      rgba(0, 0, 255, 0.06)
+    );
+  z-index: 100;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+.glitch-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 30px;
+  background: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid #333;
+  z-index: 10;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+/* Protocol Briefing in Lobby */
+.protocol-briefing {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.protocol-briefing h4 {
+  color: var(--accent);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.protocol-briefing ul {
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.protocol-briefing li { margin-bottom: 8px; }
+
+/* Grid Enhancements */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(8, 65px);
+  grid-template-rows: repeat(8, 65px);
+  gap: 10px;
+  background: rgba(0, 20, 40, 0.3);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 255, 0.05);
+}
+
+.grid-cell {
+  background: #0a0a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.grid-cell::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.02) 3px);
+  pointer-events: none;
+}
+
+.grid-cell:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+
+.grid-cell.warning {
+  background: rgba(255, 255, 0, 0.1);
+  border-color: #ffff00;
+  box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+  overflow: hidden;
+}
+
+.grid-cell.warning::before {
+  content: "!";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffff00;
+  font-weight: bold;
+  font-size: 1.5rem;
+  animation: jitter 0.2s infinite;
+}
+
+@keyframes jitter {
+  0% { transform: translate(-50%, -50%) skew(0deg); }
+  25% { transform: translate(-52%, -48%) skew(5deg); }
+  50% { transform: translate(-48%, -52%) skew(-5deg); }
+  75% { transform: translate(-51%, -49%) skew(2deg); }
+  100% { transform: translate(-50%, -50%) skew(0deg); }
+}
+
+.grid-cell.corrupted {
+  background: rgba(255, 0, 255, 0.4);
+  border-color: #ff00ff;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 10px rgba(255, 0, 255, 0.4);
+  animation: glitch-flicker 2s infinite;
+}
+
+@keyframes glitch-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; filter: hue-rotate(90deg); }
+  95% { opacity: 1; }
+  96% { opacity: 0; }
+  97% { opacity: 1; }
+}
+
+.grid-cell.fixed {
+  background: rgba(0, 255, 255, 0.4);
+  border-color: #00ffff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+/* Assignment Reveal */
+.decoding-text {
+  font-family: 'Space Mono', monospace;
+  color: var(--accent);
+  font-size: 1.2rem;
+  height: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.result-phase h1 {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+  letter-spacing: -2px;
+}
+
+.admin-win { color: #00ffff; text-shadow: 0 0 30px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4); }
+.glitch-win { color: #ff00ff; text-shadow: 0 0 30px rgba(255, 0, 255, 0.8), 0 0 60px rgba(255, 0, 255, 0.4); }
+

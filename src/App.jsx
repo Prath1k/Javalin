@@ -21,7 +21,9 @@ import OrbChase from './games/OrbChase/OrbChase';
 import NeonTetris from './games/NeonTetris/NeonTetris';
 import PrismBreak from './games/PrismBreak/PrismBreak';
 import NeonFusion from './games/NeonFusion/NeonFusion';
-
+import TheGlitch from './games/TheGlitch/TheGlitch';
+import OrbitRoyale from './games/OrbitRoyale/OrbitRoyale';
+import VectorRace from './games/VectorRace/VectorRace';
 
 // ── Theme Assets ─────────────────────────────────────────────
 import logoLight from './assets/logo-light.png';
@@ -44,6 +46,9 @@ import imgOrbChase from './assets/games/orb-chase.svg';
 import imgNeonTetris from './assets/games/neon-tetris.png';
 import imgPrismBreak from './assets/games/prism-break.png';
 import imgNeonFusion from './assets/games/neon-fusion.png';
+import imgTheGlitch from './assets/games/the-glitch.png';
+import imgOrbitRoyale from './assets/games/orbit-royale.png';
+import imgVectorRace from './assets/games/vector-race.png';
 
 
 // ── Game Registry ───────────────────────────────────────────
@@ -209,7 +214,36 @@ const GAMES = [
     component: NeonFusion,
     status: 'active',
   },
-
+  {
+    id: 'the-glitch',
+    title: 'The Glitch',
+    genre: 'Multiplayer / Deduction',
+    desc: 'Support local & online play! Find the Glitch or sabotage the neon system.',
+    icon: '👾',
+    image: imgTheGlitch,
+    component: TheGlitch,
+    status: 'active',
+  },
+  {
+    id: 'orbit-royale',
+    title: 'Orbit Royale',
+    genre: 'Multiplayer / Arena',
+    desc: 'Support local & online play! Gravity well arena. Destroy your friends.',
+    icon: '🚀',
+    image: imgOrbitRoyale,
+    component: OrbitRoyale,
+    status: 'active',
+  },
+  {
+    id: 'vector-race',
+    title: 'Vector Race',
+    genre: 'Multiplayer / Racing',
+    desc: 'Support local & online play! Momentum-based grid racing. Plan your path.',
+    icon: '🏎️',
+    image: imgVectorRace,
+    component: VectorRace,
+    status: 'active',
+  },
 ];
 
 
