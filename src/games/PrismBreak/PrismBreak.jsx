@@ -122,6 +122,16 @@ export default function PrismBreak() {
     setShowTutorial(false);
   };
 
+  const setPaddleKey = (direction, isPressed) => {
+    const k = stateRef.current.keys;
+    if (direction === 'left') k.ArrowLeft = isPressed;
+    if (direction === 'right') k.ArrowRight = isPressed;
+  };
+
+  const launchBall = () => {
+    if (!stateRef.current.inPlay) stateRef.current.inPlay = true;
+  };
+
   const nextLevel = () => {
     const s = stateRef.current;
     if (s.level >= LEVELS.length) {
@@ -150,8 +160,10 @@ export default function PrismBreak() {
       if (isDown && e.key === ' ' && !stateRef.current.inPlay) stateRef.current.inPlay = true;
     };
     
-    window.addEventListener('keydown', e => handleKey(e, true));
-    window.addEventListener('keyup', e => handleKey(e, false));
+    const keyDownHandler = (e) => handleKey(e, true);
+    const keyUpHandler = (e) => handleKey(e, false);
+    window.addEventListener('keydown', keyDownHandler);
+    window.addEventListener('keyup', keyUpHandler);
 
     const loop = () => {
       const s = stateRef.current;
@@ -347,8 +359,8 @@ export default function PrismBreak() {
     loop();
 
     return () => {
-      window.removeEventListener('keydown', handleKey);
-      window.removeEventListener('keyup', handleKey);
+      window.removeEventListener('keydown', keyDownHandler);
+      window.removeEventListener('keyup', keyUpHandler);
       cancelAnimationFrame(animId);
     };
   }, [showTutorial, uiState.over, uiState.won, highScore, updateHighScore]);
@@ -375,6 +387,33 @@ export default function PrismBreak() {
             <div><Icon name="workspace_premium" /> BEST: {highScore}</div>
           </div>
           <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="prism-canvas" />
+
+          <div className="prism-mobile-controls game-touch-controls" role="group" aria-label="Prism Break touch controls">
+            <button
+              className="prism-ctrl-btn game-touch-btn compact"
+              onPointerDown={(e) => { e.preventDefault(); setPaddleKey('left', true); }}
+              onPointerUp={() => setPaddleKey('left', false)}
+              onPointerCancel={() => setPaddleKey('left', false)}
+              onPointerLeave={() => setPaddleKey('left', false)}
+            >
+              LEFT
+            </button>
+            <button
+              className="prism-ctrl-btn launch game-touch-btn"
+              onPointerDown={(e) => { e.preventDefault(); launchBall(); }}
+            >
+              LAUNCH
+            </button>
+            <button
+              className="prism-ctrl-btn game-touch-btn compact"
+              onPointerDown={(e) => { e.preventDefault(); setPaddleKey('right', true); }}
+              onPointerUp={() => setPaddleKey('right', false)}
+              onPointerCancel={() => setPaddleKey('right', false)}
+              onPointerLeave={() => setPaddleKey('right', false)}
+            >
+              RIGHT
+            </button>
+          </div>
           
           {uiState.over && (
             <div className="prism-overlay">

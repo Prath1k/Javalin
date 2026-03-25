@@ -248,6 +248,22 @@
   letter-spacing: 1px;
 }
 
+.tetris-mobile-controls {
+  display: none;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 64px;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(92vw, 440px);
+  z-index: 4;
+}
+
+.tetris-mobile-controls .game-touch-btn {
+  width: 100%;
+}
+
 @media (max-width: 800px) {
   .neon-tetris-container {
     flex-direction: column;
@@ -267,6 +283,15 @@
   .tetris-cell {
     width: 24px;
     height: 24px;
+  }
+
+  .tetris-mobile-controls {
+    display: grid;
+  }
+
+  .tetris-controls-hint {
+    bottom: 12px;
+    font-size: 11px;
   }
 }
 

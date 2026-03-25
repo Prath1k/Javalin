@@ -202,6 +202,24 @@ export default function NeonTetris() {
     setActivePiece(null);
   };
 
+  const handleMobileAction = (action) => {
+    if (gameOver) return;
+    if (action === 'left') movePiece(-1, 0);
+    if (action === 'right') movePiece(1, 0);
+    if (action === 'down') movePiece(0, 1);
+    if (action === 'rotate') rotatePiece();
+    if (action === 'drop') {
+      if (!activePieceRef.current) return;
+      let tempY = activePieceRef.current.y;
+      while (!checkCollision(activePieceRef.current.x, tempY + 1, activePieceRef.current.shape)) {
+        tempY++;
+      }
+      setActivePiece({ ...activePieceRef.current, y: tempY });
+      setTimeout(lockPiece, 50);
+    }
+    if (action === 'pause') setIsPaused(prev => !prev);
+  };
+
   // Ghost piece calculation
   const getGhostY = () => {
     if (!activePiece) return 0;
@@ -327,8 +345,17 @@ export default function NeonTetris() {
         </div>
       </div>
 
+      <div className="tetris-mobile-controls game-touch-controls" role="group" aria-label="Neon Tetris touch controls">
+        <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); handleMobileAction('left'); }}>LEFT</button>
+        <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); handleMobileAction('right'); }}>RIGHT</button>
+        <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); handleMobileAction('down'); }}>DOWN</button>
+        <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); handleMobileAction('rotate'); }}>ROTATE</button>
+        <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); handleMobileAction('drop'); }}>DROP</button>
+        <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); handleMobileAction('pause'); }}>{isPaused ? 'RESUME' : 'PAUSE'}</button>
+      </div>
+
       <div className="tetris-controls-hint">
-        ARROWS: SHIFT/ROTATE | SPACE: DROP | P: SUSPEND
+        DESKTOP: ARROWS + SPACE + P | MOBILE: USE TOUCH PAD
       </div>
     </div>
   );

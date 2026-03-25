@@ -28,6 +28,7 @@ export default function NeonFusion() {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
+  const [touchStart, setTouchStart] = useState(null);
 
   const move = useCallback((direction) => {
     if (gameOver || won) return;
@@ -109,6 +110,28 @@ export default function NeonFusion() {
     setWon(false);
   };
 
+  const handleTouchStart = (e) => {
+    if (!e.touches?.[0]) return;
+    setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStart || !e.changedTouches?.[0]) return;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = endX - touchStart.x;
+    const dy = endY - touchStart.y;
+    const threshold = 24;
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+      move(dx > 0 ? 'right' : 'left');
+    } else if (Math.abs(dy) > threshold) {
+      move(dy > 0 ? 'down' : 'up');
+    }
+
+    setTouchStart(null);
+  };
+
   const colors = {
     2: '#eee4da', 4: '#ede0c8', 8: '#f2b179', 16: '#f59563',
     32: '#f67c5f', 64: '#f65e3b', 128: '#edcf72', 256: '#edcc61',
@@ -131,7 +154,7 @@ export default function NeonFusion() {
         </div>
       </div>
 
-      <div className="fusion-grid">
+      <div className="fusion-grid" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {grid.map((row, ri) => (
           <div key={ri} className="fusion-row">
             {row.map((cell, ci) => (
@@ -154,8 +177,17 @@ export default function NeonFusion() {
         )}
       </div>
 
+      <div className="fusion-mobile-controls game-touch-controls" role="group" aria-label="Neon Fusion touch controls">
+        <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); move('up'); }}>UP</button>
+        <div className="fusion-mobile-row game-touch-row">
+          <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); move('left'); }}>LEFT</button>
+          <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); move('down'); }}>DOWN</button>
+          <button className="game-touch-btn compact" onPointerDown={(e) => { e.preventDefault(); move('right'); }}>RIGHT</button>
+        </div>
+      </div>
+
       <div className="fusion-controls-hint game-controls-hint">
-        Use Arrows or WASD to merge spectra.
+        Desktop: Arrows/WASD. Mobile: swipe the board or use touch controls.
       </div>
     </div>
   );

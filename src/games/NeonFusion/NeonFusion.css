@@ -143,6 +143,16 @@
   margin-top: 32px;
 }
 
+.fusion-mobile-controls {
+  display: none;
+  margin-top: 14px;
+  width: min(92vw, 320px);
+}
+
+.fusion-mobile-row {
+  width: 100%;
+}
+
 @media (max-width: 540px) {
   .fusion-header, .fusion-grid {
     width: 320px;
@@ -157,5 +167,15 @@
   }
   .fusion-cell {
     font-size: 1.5rem !important;
+  }
+
+  .fusion-mobile-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .fusion-controls-hint {
+    margin-top: 12px;
   }
 }

@@ -123,3 +123,31 @@
   text-shadow: 0 0 30px rgba(255, 62, 62, 0.4);
 }
 
+.prism-mobile-controls {
+  display: none;
+  margin-top: 14px;
+  width: min(92vw, 520px);
+  gap: 10px;
+}
+
+.prism-ctrl-btn {
+  flex: 1;
+}
+
+.prism-ctrl-btn.launch {
+  min-width: 120px;
+}
+
+@media (max-width: 900px) {
+  .prism-header {
+    gap: 12px;
+    font-size: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .prism-mobile-controls {
+    display: flex;
+  }
+}
+
