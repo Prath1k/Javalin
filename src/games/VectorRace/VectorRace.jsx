@@ -232,6 +232,25 @@ export default function VectorRace() {
         </div>
       </div>
 
+      {gameState.phase === 'PLAYING' && activeRacer && activeRacer.status === 'racing' && (!isOnline || currentPlayer?.id === localPlayerId) && (
+        <div className="vector-mobile-pad">
+          <div className="v-pad-grid">
+            {[-1,0,1].map(dy => (
+              [-1,0,1].map(dx => (
+                <button 
+                  key={`${dx}-${dy}`}
+                  className="v-pad-btn"
+                  onClick={() => handleVectorMove(dx, dy)}
+                >
+                  <span className="v-dir-label">{dy === -1 ? '↑' : dy === 1 ? '↓' : ''}{dx === -1 ? '←' : dx === 1 ? '→' : (dy === 0 ? '•' : '')}</span>
+                  <small>{dx},{dy}</small>
+                </button>
+              ))
+            ))}
+          </div>
+        </div>
+      )}
+
       {gameState.phase === 'FINISHED' && (
         <div className="vector-overlay">
           <h1>{gameState.winner ? 'RACE CONCLUDED' : 'CRITICAL FAILURE'}</h1>

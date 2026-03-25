@@ -25,6 +25,72 @@
   z-index: 10;
 }
 
+/* Mobile Controls Styling */
+.mobile-controls {
+  position: absolute;
+  bottom: 0px;
+  left: 0;
+  right: 0;
+  height: 200px;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  z-index: 100;
+}
+
+/* Only show on touch devices or small screens if desired, 
+   but for the web app we'll show them when appropriate or via media query */
+@media (min-width: 1024px) {
+  .mobile-controls {
+    display: none;
+  }
+}
+
+.dpad, .actions {
+  display: flex;
+  gap: 15px;
+  pointer-events: auto;
+}
+
+.ctrl-btn {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 50%;
+  color: #00ffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.1s;
+}
+
+.ctrl-btn:active {
+  background: rgba(0, 255, 255, 0.4);
+  transform: scale(0.9);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+.ctrl-btn span {
+  font-size: 32px;
+}
+
+.ctrl-btn.thrust {
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 50, 50, 0.2);
+  border-color: rgba(255, 50, 50, 0.4);
+  color: #ff3e3e;
+}
+
+.ctrl-btn.thrust:active {
+  background: rgba(255, 50, 50, 0.5);
+  box-shadow: 0 0 30px rgba(255, 50, 50, 0.7);
+}
 /* Tactical Briefing */
 .tactical-briefing {
   margin-top: 30px;

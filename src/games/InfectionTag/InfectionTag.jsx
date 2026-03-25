@@ -58,6 +58,47 @@ export default function InfectionTag() {
         </div>
       </div>
       <div ref={containerRef} className="phaser-container" />
+      
+      {/* Mobile D-Pad */}
+      <div className="infection-mobile-controls">
+        <div className="dpad-grid">
+          <div /> 
+          <button 
+            className="dpad-btn up"
+            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'up', active: true } }))}
+            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'up', active: false } }))}
+          >
+            <span className="material-symbols-outlined">keyboard_arrow_up</span>
+          </button>
+          <div />
+          
+          <button 
+            className="dpad-btn left"
+            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'left', active: true } }))}
+            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'left', active: false } }))}
+          >
+            <span className="material-symbols-outlined">keyboard_arrow_left</span>
+          </button>
+          <div className="dpad-center" />
+          <button 
+            className="dpad-btn right"
+            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'right', active: true } }))}
+            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'right', active: false } }))}
+          >
+            <span className="material-symbols-outlined">keyboard_arrow_right</span>
+          </button>
+          
+          <div />
+          <button 
+            className="dpad-btn down"
+            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'down', active: true } }))}
+            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'down', active: false } }))}
+          >
+            <span className="material-symbols-outlined">keyboard_arrow_down</span>
+          </button>
+          <div />
+        </div>
+      </div>
     </div>
   );
 }

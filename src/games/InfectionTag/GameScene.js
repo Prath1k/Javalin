@@ -6,6 +6,7 @@ export default class GameScene extends Phaser.Scene {
     super('GameScene');
     this.players = {}; // Store player sprites
     this.localPlayerId = null;
+    this.mobileKeys = { up: false, down: false, left: false, right: false };
   }
 
   preload() {
@@ -29,6 +30,12 @@ export default class GameScene extends Phaser.Scene {
       down: Phaser.Input.Keyboard.KeyCodes.S,
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D
+    });
+
+    // Mobile Input listener
+    window.addEventListener('mobile-move', (e) => {
+      const { dir, active } = e.detail;
+      this.mobileKeys[dir] = active;
     });
 
     // Connect to Node.js backend
@@ -144,11 +151,11 @@ export default class GameScene extends Phaser.Scene {
     let dx = 0;
     let dy = 0;
 
-    if (this.cursors.left.isDown) dx = -1;
-    else if (this.cursors.right.isDown) dx = 1;
+    if (this.cursors.left.isDown || this.mobileKeys.left) dx = -1;
+    else if (this.cursors.right.isDown || this.mobileKeys.right) dx = 1;
     
-    if (this.cursors.up.isDown) dy = -1;
-    else if (this.cursors.down.isDown) dy = 1;
+    if (this.cursors.up.isDown || this.mobileKeys.up) dy = -1;
+    else if (this.cursors.down.isDown || this.mobileKeys.down) dy = 1;
 
     // Normalize diagonal movement
     if (dx !== 0 && dy !== 0) {

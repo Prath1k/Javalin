@@ -255,6 +255,14 @@ export default function OrbitRoyale() {
     return () => { window.removeEventListener('keydown', d); window.removeEventListener('keyup', u); };
   }, []);
 
+  const handleTouchStart = (key) => {
+    keysRef.current[key] = true;
+  };
+
+  const handleTouchEnd = (key) => {
+    keysRef.current[key] = false;
+  };
+
 
   const handleStartGame = (playerCount, activePlayers) => {
     const ships = {};
@@ -306,7 +314,40 @@ export default function OrbitRoyale() {
       <div className="orbit-hud">
         <button onClick={disconnect} className="action-btn danger">ABORT MISSION</button>
       </div>
+
       <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="orbit-canvas" />
+      
+      {/* Mobile Controls Overlay */}
+      <div className="mobile-controls">
+        <div className="dpad">
+          <button 
+            className="ctrl-btn left"
+            onPointerDown={() => handleTouchStart('ArrowLeft')}
+            onPointerUp={() => handleTouchEnd('ArrowLeft')}
+            onPointerLeave={() => handleTouchEnd('ArrowLeft')}
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <button 
+            className="ctrl-btn right"
+            onPointerDown={() => handleTouchStart('ArrowRight')}
+            onPointerUp={() => handleTouchEnd('ArrowRight')}
+            onPointerLeave={() => handleTouchEnd('ArrowRight')}
+          >
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </button>
+        </div>
+        <div className="actions">
+          <button 
+            className="ctrl-btn thrust"
+            onPointerDown={() => handleTouchStart('ArrowUp')}
+            onPointerUp={() => handleTouchEnd('ArrowUp')}
+            onPointerLeave={() => handleTouchEnd('ArrowUp')}
+          >
+            <span className="material-symbols-outlined">rocket_launch</span>
+          </button>
+        </div>
+      </div>
       
       {uiPhase === 'WINNER' && (
         <div className="orbit-overlay">

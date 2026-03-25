@@ -49,3 +49,55 @@
   font-weight: bold;
   letter-spacing: 1px;
 }
+
+/* Mobile Controls */
+.infection-mobile-controls {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  z-index: 1000;
+}
+
+@media (min-width: 1024px) {
+  .infection-mobile-controls {
+    display: none;
+  }
+}
+
+.dpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.dpad-btn {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 12px;
+  color: #00ffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  backdrop-filter: blur(5px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dpad-btn:active {
+  background: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+  transform: scale(0.95);
+}
+
+.dpad-btn span {
+  font-size: 32px;
+}
+
+.dpad-center {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 12px;
+}
