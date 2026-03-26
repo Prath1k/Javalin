@@ -53,6 +53,28 @@
   pointer-events: auto;
 }
 
+.joystick-base {
+  width: 150px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(0, 255, 255, 0.2);
+  border-radius: 50%;
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.joystick-thumb {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 50%;
+  border: 1px solid #00ffff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
 .ctrl-btn {
   width: 80px;
   height: 80px;

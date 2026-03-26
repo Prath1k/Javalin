@@ -29,7 +29,12 @@ export default function TheGlitch() {
     scores: { fixed: 0, corrupted: 0 },
     votes: {}, // playerId -> votedForId
     timer: 0,
-    winner: null // 'ADMINS', 'GLITCH'
+    winner: null, // 'ADMINS', 'GLITCH'
+    abilities: {
+      scanUsed: false,
+      blackoutActive: false,
+      blackoutEnds: 0
+    }
   });
 
   // Handle incoming network state (Slave to Host)
@@ -64,7 +69,8 @@ export default function TheGlitch() {
       scores: { fixed: 0, corrupted: 0 },
       votes: {},
       timer: 5,
-      winner: null
+      winner: null,
+      abilities: { scanUsed: false, blackoutActive: false, blackoutEnds: 0 }
     };
 
     setGameState(initialState);
@@ -195,6 +201,9 @@ export default function TheGlitch() {
       }
 
       if (updated) {
+        // Mobile Haptic Feedback
+        if ('vibrate' in navigator) navigator.vibrate(50);
+
         const next = { ...prev, grid: newGrid, scores: newScores };
         if (newScores.corrupted >= SABOTAGE_TARGET) {
           next.phase = 'RESULT';
@@ -207,6 +216,32 @@ export default function TheGlitch() {
         return next;
       }
       return prev;
+    });
+  };
+  
+  const handleAbility = (type) => {
+    if (gameState.phase !== 'PLAYING') return;
+    const isGlitch = gameState.roles[localPlayerId]?.isGlitch;
+
+    setGameState(prev => {
+      const next = { ...prev };
+      if (isGlitch && type === 'BLACKOUT') {
+        next.abilities.blackoutActive = true;
+        next.abilities.blackoutEnds = Date.now() + 3000;
+        if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+        setTimeout(() => {
+          setGameState(p => ({ ...p, abilities: { ...p.abilities, blackoutActive: false } }));
+        }, 3000);
+      }
+      
+      if (!isGlitch && type === 'SCAN' && !prev.abilities.scanUsed) {
+        next.abilities.scanUsed = true;
+        if ('vibrate' in navigator) navigator.vibrate(100);
+        // Note: The actual "Scan" result is shown in the UI by revealing role icons temporarily
+      }
+
+      if (isOnline) broadcastState(next);
+      return next;
     });
   };
 
@@ -302,14 +337,40 @@ export default function TheGlitch() {
             <div className="glitch-score">SYSTEMS CORRUPTED: {gameState.scores.corrupted}/{SABOTAGE_TARGET}</div>
           </div>
           
-          <div className="grid-container">
+          <div className={`grid-container ${gameState.abilities.blackoutActive ? 'blackout' : ''}`}>
             {gameState.grid.map((cellState, i) => (
               <div 
                 key={i} 
                 className={`grid-cell ${cellState} ${isGlitch ? 'is-glitch' : ''}`}
                 onClick={() => handleCellClick(i)}
-              />
+              >
+                {gameState.abilities.scanUsed && !isGlitch && (
+                  <div className="scan-reveal">
+                    {gameState.roles[Object.keys(gameState.roles)[i % players.length]]?.isGlitch ? '⚠️' : '✓'}
+                  </div>
+                )}
+              </div>
             ))}
+          </div>
+
+          <div className="ability-bar">
+            {!isGlitch && (
+              <button 
+                className="ability-btn scan" 
+                disabled={gameState.abilities.scanUsed}
+                onClick={() => handleAbility('SCAN')}
+              >
+                SYSTEM SCAN {gameState.abilities.scanUsed ? '[USED]' : '[READY]'}
+              </button>
+            )}
+            {isGlitch && (
+              <button 
+                className="ability-btn blackout" 
+                onClick={() => handleAbility('BLACKOUT')}
+              >
+                GRID BLACKOUT [SIGNAL OVERRIDE]
+              </button>
+            )}
           </div>
         </div>
       )}

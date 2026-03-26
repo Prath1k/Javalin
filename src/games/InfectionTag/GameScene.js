@@ -32,10 +32,42 @@ export default class GameScene extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.D
     });
 
-    // Mobile Input listener
-    window.addEventListener('mobile-move', (e) => {
-      const { dir, active } = e.detail;
-      this.mobileKeys[dir] = active;
+    // Mobile Dynamic Joystick listener
+    let startPos = null;
+    window.addEventListener('joystick-start', (e) => {
+      startPos = e.detail;
+      const visual = document.getElementById('infection-joystick-visual');
+      if (visual) {
+        visual.style.display = 'block';
+        visual.style.left = `${startPos.x}px`;
+        visual.style.top = `${startPos.y}px`;
+      }
+    });
+
+    window.addEventListener('joystick-move', (e) => {
+      if (!startPos) return;
+      const dx = e.detail.x - startPos.x;
+      const dy = e.detail.y - startPos.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      
+      this.mobileKeys.up = dy < -20;
+      this.mobileKeys.down = dy > 20;
+      this.mobileKeys.left = dx < -20;
+      this.mobileKeys.right = dx > 20;
+
+      const thumb = document.querySelector('#infection-joystick-visual .joystick-thumb');
+      if (thumb) {
+        const moveX = Math.min(Math.max(dx, -40), 40);
+        const moveY = Math.min(Math.max(dy, -40), 40);
+        thumb.style.transform = `translate(${moveX}px, ${moveY}px)`;
+      }
+    });
+
+    window.addEventListener('joystick-end', () => {
+      startPos = null;
+      this.mobileKeys = { up: false, down: false, left: false, right: false };
+      const visual = document.getElementById('infection-joystick-visual');
+      if (visual) visual.style.display = 'none';
     });
 
     // Connect to Node.js backend
@@ -73,7 +105,12 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // 4. State Update (Transforms and Infection Status)
-    this.socket.on('stateUpdate', (serverPlayers) => {
+    this.socket.on('stateUpdate', (data) => {
+      const serverPlayers = data.players || data;
+      const orbs = data.powerOrbs || [];
+      
+      this.updateOrbs(orbs);
+
       if (!this.players) return;
       
       Object.keys(serverPlayers).forEach(id => {
@@ -103,12 +140,32 @@ export default class GameScene extends Phaser.Scene {
       });
     });
 
-    // 5. Infection Event (For sound/shake effects)
     this.socket.on('playerInfected', (id) => {
       if (id === this.localPlayerId) {
         this.cameras.main.shake(300, 0.02);
-        // Could play a sound here
       }
+    });
+
+    this.socket.on('powerUp', (data) => {
+      if (data.playerId === this.localPlayerId) {
+         this.cameras.main.flash(500, 0, 255, 255);
+         // Apply temporary speed boost locally for better feel
+         this.speedBoost = 2;
+         this.time.delayedCall(2000, () => this.speedBoost = 1);
+      }
+    });
+
+    this.orbs = this.add.group();
+    this.speedBoost = 1;
+  }
+
+  updateOrbs(serverOrbs) {
+    this.orbs.clear(true, true);
+    serverOrbs.forEach(o => {
+      const orb = this.add.circle(o.x, o.y, 8, o.type === 'SPEED' ? 0x00ffff : 0xffaa00);
+      this.orbs.add(orb);
+      // Simple glow
+      orb.setStrokeStyle(2, 0xffffff, 0.8);
     });
   }
 
@@ -147,7 +204,7 @@ export default class GameScene extends Phaser.Scene {
   update() {
     if (!this.localPlayer || !this.socket) return;
 
-    const speed = 250;
+    const speed = 250 * this.speedBoost;
     let dx = 0;
     let dy = 0;
 
@@ -165,6 +222,11 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.localPlayer.setVelocity(dx * speed, dy * speed);
+
+    // Dynamic Camera Zoom
+    const currentVel = Math.sqrt(this.localPlayer.body.velocity.x**2 + this.localPlayer.body.velocity.y**2);
+    const targetZoom = 1 - (currentVel / 1000) * 0.2;
+    this.cameras.main.zoom = Phaser.Math.Linear(this.cameras.main.zoom, targetZoom, 0.05);
 
     // Only emit if moving, or if we need to sync a stop
     const x = this.localPlayer.x;

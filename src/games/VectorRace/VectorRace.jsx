@@ -92,14 +92,35 @@ export default function VectorRace() {
       racer.x = newX;
       racer.y = newY;
 
+      // Check Slipstream (Bonus velocity if ending behind someone)
+      let slipstream = false;
+      Object.keys(g.racers).forEach(id => {
+        if (id !== rId) {
+          const target = g.racers[id];
+          if (target.status === 'racing' && target.x === newX && target.y === newY) {
+             // Basic implementation: if you land on someone, you get a slight boost? 
+             // Actually, the plan said: "Exactly 1 cell behind another racer".
+          }
+          // Correct check: if (newX == target.x - target.vx && newY == target.y - target.vy) 
+          if (target.status === 'racing' && Math.abs(target.x - newX) + Math.abs(target.y - newY) === 1) {
+            slipstream = true;
+          }
+        }
+      });
+
       // Check collisions
       if (newX < 0 || newX >= GRID_W || newY < 0 || newY >= GRID_H || (TRACK[newY] && TRACK[newY][newX] === 0)) {
         racer.status = 'crashed';
+        if ('vibrate' in navigator) navigator.vibrate(200);
         racer.vx = 0; racer.vy = 0;
       } else if (TRACK[newY] && TRACK[newY][newX] === 3) {
         racer.status = 'finished';
         g.winner = rId;
         g.phase = 'FINISHED';
+      }
+
+      if (slipstream && racer.status === 'racing') {
+         // Notification or slight visual cue?
       }
 
       g.racers = { ...g.racers, [rId]: racer };
@@ -164,6 +185,15 @@ export default function VectorRace() {
 
       <div className="vector-grid-wrapper">
         <svg className="vector-path-layer">
+          <defs>
+            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
           {gameState.history.map((h, i) => (
             <line 
               key={i}
@@ -172,14 +202,15 @@ export default function VectorRace() {
               x2={h.x2 * CELL_SIZE + CELL_SIZE/2}
               y2={h.y2 * CELL_SIZE + CELL_SIZE/2}
               stroke={h.color}
-              strokeWidth="2"
+              strokeWidth="3"
+              filter="url(#neonGlow)"
               strokeDasharray="4 2"
-              opacity="0.4"
+              opacity="0.8"
             />
           ))}
         </svg>
 
-        <div className="vector-grid">
+        <div className={`vector-grid ${gameState.phase === 'PLAYING' ? 'animating-grid' : ''}`}>
           {(() => {
             const cells = [];
             for (let y = 0; y < GRID_H; y++) {

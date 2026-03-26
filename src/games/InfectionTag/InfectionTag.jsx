@@ -59,44 +59,26 @@ export default function InfectionTag() {
       </div>
       <div ref={containerRef} className="phaser-container" />
       
-      {/* Mobile D-Pad */}
-      <div className="infection-mobile-controls">
-        <div className="dpad-grid">
-          <div /> 
-          <button 
-            className="dpad-btn up"
-            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'up', active: true } }))}
-            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'up', active: false } }))}
-          >
-            <span className="material-symbols-outlined">keyboard_arrow_up</span>
-          </button>
-          <div />
-          
-          <button 
-            className="dpad-btn left"
-            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'left', active: true } }))}
-            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'left', active: false } }))}
-          >
-            <span className="material-symbols-outlined">keyboard_arrow_left</span>
-          </button>
-          <div className="dpad-center" />
-          <button 
-            className="dpad-btn right"
-            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'right', active: true } }))}
-            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'right', active: false } }))}
-          >
-            <span className="material-symbols-outlined">keyboard_arrow_right</span>
-          </button>
-          
-          <div />
-          <button 
-            className="dpad-btn down"
-            onPointerDown={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'down', active: true } }))}
-            onPointerUp={() => window.dispatchEvent(new CustomEvent('mobile-move', { detail: { dir: 'down', active: false } }))}
-          >
-            <span className="material-symbols-outlined">keyboard_arrow_down</span>
-          </button>
-          <div />
+      {/* Mobile Sticky Joystick Overlay */}
+      <div 
+        className="infection-touch-zone"
+        onPointerDown={(e) => {
+          const x = e.clientX;
+          const y = e.clientY;
+          window.dispatchEvent(new CustomEvent('joystick-start', { detail: { x, y } }));
+        }}
+        onPointerMove={(e) => {
+          if (e.buttons > 0) {
+             window.dispatchEvent(new CustomEvent('joystick-move', { detail: { x: e.clientX, y: e.clientY } }));
+          }
+        }}
+        onPointerUp={() => {
+          window.dispatchEvent(new CustomEvent('joystick-end'));
+        }}
+      >
+        <div id="infection-joystick-visual" className="joystick-visual" style={{ display: 'none' }}>
+           <div className="joystick-base" />
+           <div className="joystick-thumb" />
         </div>
       </div>
     </div>

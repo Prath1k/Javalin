@@ -19,7 +19,13 @@ export default function OrbitRoyale() {
   // Local input tracking
   const keysRef = useRef({ ArrowLeft: false, ArrowRight: false, ArrowUp: false });
   // Engine State handled by Host
-  const gameStateRef = useRef({ phase: 'LOBBY', ships: {}, particles: [] });
+  const gameStateRef = useRef({ 
+    phase: 'LOBBY', 
+    ships: {}, 
+    particles: [],
+    shields: [],
+    shockwaves: []
+  });
 
   // For UI state rendering only (Host broadcasts, clients render)
   const [uiPhase, setUiPhase] = useState('LOBBY'); // LOBBY, PLAYING, WINNER
@@ -90,19 +96,64 @@ export default function OrbitRoyale() {
           ship.x += ship.vx;
           ship.y += ship.vy;
 
+          // Engine Trail logic (Host only)
+          if (!ship.trail) ship.trail = [];
+          ship.trail.push({ x: ship.x, y: ship.y, life: 1 });
+          if (ship.trail.length > 30) ship.trail.shift();
+
+          // Check Shields
+          for (let i = state.shields.length - 1; i >= 0; i--) {
+            const shield = state.shields[i];
+            const sDx = ship.x - shield.x;
+            const sDy = ship.y - shield.y;
+            const sDist = Math.sqrt(sDx * sDx + sDy * sDy);
+            if (sDist < 30) {
+              ship.shielded = true;
+              ship.shieldTime = Date.now() + 5000;
+              state.shields.splice(i, 1);
+            }
+          }
+
+          if (ship.shielded && Date.now() > ship.shieldTime) ship.shielded = false;
+
           // Death conditions
           if (dist < GRAVITY_WELL.radius || ship.x < 0 || ship.x > CANVAS_W || ship.y < 0 || ship.y > CANVAS_H) {
-            ship.alive = false;
-            // Explosion
-            for(let i=0; i<20; i++){
-              state.particles.push({
-                x: ship.x, y: ship.y,
-                vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
-                life: 1, color: ship.color
-              });
+            if (ship.shielded) {
+              // Bounce back
+              ship.vx *= -0.8; ship.vy *= -0.8;
+              ship.shielded = false;
+            } else {
+              ship.alive = false;
+              state.shockwaves.push({ x: ship.x, y: ship.y, r: 0, life: 1 });
+              // Explosion
+              for(let i=0; i<30; i++){
+                state.particles.push({
+                  x: ship.x, y: ship.y,
+                  vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15,
+                  life: 1, color: ship.color
+                });
+              }
             }
           }
         });
+
+        // Spawn Shields (Host logic)
+        if (isHost && Math.random() < 0.005 && state.shields.length < 2) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = 150 + Math.random() * 150;
+          state.shields.push({
+            x: GRAVITY_WELL.x + Math.cos(angle) * r,
+            y: GRAVITY_WELL.y + Math.sin(angle) * r,
+            id: Date.now()
+          });
+        }
+
+        // Shockwave updates
+        for (let i = state.shockwaves.length - 1; i >= 0; i--) {
+          state.shockwaves[i].r += 5;
+          state.shockwaves[i].life -= 0.02;
+          if (state.shockwaves[i].life <= 0) state.shockwaves.splice(i, 1);
+        }
 
         // Check Winner
         if (aliveCount <= 1 && Object.keys(state.ships).length > 1) {
@@ -180,11 +231,33 @@ export default function OrbitRoyale() {
         Object.values(state.ships).forEach(ship => {
           if (!ship.alive) return;
 
-          // Draw Trail (stored in state.trails if we had it, but let's draw a kinetic one)
-          // For simplicity without bloating network state, we'll draw a phantom trail
+          // Advanced Engine Trail
+          if (ship.trail) {
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = ship.color;
+            ship.trail.forEach((t, i) => {
+              ctx.globalAlpha = i / ship.trail.length;
+              if (i === 0) ctx.moveTo(t.x, t.y);
+              else ctx.lineTo(t.x, t.y);
+            });
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
           
           ctx.save();
           ctx.translate(ship.x, ship.y);
+          
+          // Draw Shield
+          if (ship.shielded) {
+             ctx.beginPath();
+             ctx.arc(0, 0, 25, 0, Math.PI*2);
+             ctx.strokeStyle = '#00ffff';
+             ctx.setLineDash([5, 5]);
+             ctx.stroke();
+             ctx.setLineDash([]);
+          }
+
           ctx.rotate(ship.angle);
           
           ctx.strokeStyle = ship.color;
@@ -214,6 +287,29 @@ export default function OrbitRoyale() {
           }
 
           ctx.restore();
+        });
+      }
+
+      // Draw Shields
+      if (state.shields) {
+        state.shields.forEach(s => {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, 15 + Math.sin(Date.now()*0.01)*5, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+          ctx.fill();
+          ctx.strokeStyle = '#00ffff';
+          ctx.stroke();
+        });
+      }
+
+      // Draw Shockwaves
+      if (state.shockwaves) {
+        state.shockwaves.forEach(sw => {
+          ctx.beginPath();
+          ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI*2);
+          ctx.strokeStyle = `rgba(255, 255, 255, ${sw.life})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
         });
       }
 
@@ -261,6 +357,31 @@ export default function OrbitRoyale() {
 
   const handleTouchEnd = (key) => {
     keysRef.current[key] = false;
+  };
+
+  const handleJoystick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist > 10) {
+      const angle = Math.atan2(dy, dx);
+      // Map angle to ArrowLeft/Right
+      const ship = gameStateRef.current.ships[localPlayerId];
+      if (ship && ship.alive) {
+        const diff = angle - ship.angle;
+        keysRef.current.ArrowLeft = diff < -0.1;
+        keysRef.current.ArrowRight = diff > 0.1;
+        keysRef.current.ArrowUp = dist > 40;
+      }
+    } else {
+      keysRef.current.ArrowLeft = false;
+      keysRef.current.ArrowRight = false;
+      keysRef.current.ArrowUp = false;
+    }
   };
 
 
@@ -319,30 +440,22 @@ export default function OrbitRoyale() {
       
       {/* Mobile Controls Overlay */}
       <div className="mobile-controls">
-        <div className="dpad">
-          <button 
-            className="ctrl-btn left"
-            onPointerDown={() => handleTouchStart('ArrowLeft')}
-            onPointerUp={() => handleTouchEnd('ArrowLeft')}
-            onPointerLeave={() => handleTouchEnd('ArrowLeft')}
-          >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <button 
-            className="ctrl-btn right"
-            onPointerDown={() => handleTouchStart('ArrowRight')}
-            onPointerUp={() => handleTouchEnd('ArrowRight')}
-            onPointerLeave={() => handleTouchEnd('ArrowRight')}
-          >
-            <span className="material-symbols-outlined">arrow_forward</span>
-          </button>
+        <div 
+          className="joystick-base"
+          onPointerMove={handleJoystick}
+          onPointerUp={() => {
+            keysRef.current.ArrowLeft = false;
+            keysRef.current.ArrowRight = false;
+            keysRef.current.ArrowUp = false;
+          }}
+        >
+          <div className="joystick-thumb" />
         </div>
         <div className="actions">
           <button 
             className="ctrl-btn thrust"
             onPointerDown={() => handleTouchStart('ArrowUp')}
             onPointerUp={() => handleTouchEnd('ArrowUp')}
-            onPointerLeave={() => handleTouchEnd('ArrowUp')}
           >
             <span className="material-symbols-outlined">rocket_launch</span>
           </button>

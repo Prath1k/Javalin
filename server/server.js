@@ -26,6 +26,8 @@ const PLAYER_SPEED = 250;
 const INFECTION_RADIUS = 50;
 
 let players = {};
+let powerOrbs = [];
+const MAX_ORBS = 5;
 // Store inputs for authoritative movement (simplified for now, mostly relying on client positions but validating)
 // In a true authoritative server, clients send INPUTS, but for this demo, clients will send TARGET POSITIONS and server validates distance.
 
@@ -129,8 +131,31 @@ setInterval(() => {
     }
   }
 
+  // Handle Power Orbs
+  if (powerOrbs.length < MAX_ORBS && Math.random() < 0.01) {
+    powerOrbs.push({
+      id: Date.now(),
+      x: Math.random() * (MAP_WIDTH - 100) + 50,
+      y: Math.random() * (MAP_HEIGHT - 100) + 50,
+      type: Math.random() > 0.5 ? 'SPEED' : 'RADIUS'
+    });
+  }
+
+  // Orb Collisions
+  for(let i=powerOrbs.length-1; i>=0; i--) {
+     const orb = powerOrbs[i];
+     playerList.forEach(p => {
+       const dx = p.x - orb.x;
+       const dy = p.y - orb.y;
+       if (Math.sqrt(dx*dx + dy*dy) < 30) {
+         io.emit('powerUp', { playerId: p.id, type: orb.type });
+         powerOrbs.splice(i, 1);
+       }
+     });
+  }
+
   // Broadcast state 30 times a second
-  io.emit('stateUpdate', players);
+  io.emit('stateUpdate', { players, powerOrbs });
 
 }, GAME_TICK_RATE);
 
