@@ -258,7 +258,6 @@ const GAMES = [
   },
 ];
 
-
 // ── Material Icon helper ────────────────────────────────────
 const Icon = ({ name, className = '' }) => (
   <span className={`material-symbols-outlined ${className}`}>{name}</span>
