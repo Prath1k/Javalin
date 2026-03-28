@@ -26,6 +26,7 @@ import TheGlitch from './games/TheGlitch/TheGlitch';
 import OrbitRoyale from './games/OrbitRoyale/OrbitRoyale';
 import VectorRace from './games/VectorRace/VectorRace';
 import InfectionTag from './games/InfectionTag/InfectionTag';
+import SnakesAndLadders from './games/SnakesAndLadders/SnakesAndLadders';
 
 // ── Theme Assets ─────────────────────────────────────────────
 import logoLight from './assets/logo-light.png';
@@ -265,6 +266,16 @@ const GAMES = [
     icon: '🦠',
     image: imgInfectionTag,
     component: InfectionTag,
+    status: 'active',
+  },
+  {
+    id: 'snakes-ladders',
+    title: 'Snakes & Ladders',
+    genre: 'Board / Party',
+    desc: 'Classic board game replicated with a premium jungle aesthetic. Scale the ladders, avoid the snakes!',
+    icon: '🐍',
+    image: null,
+    component: SnakesAndLadders,
     status: 'active',
   },
 ];

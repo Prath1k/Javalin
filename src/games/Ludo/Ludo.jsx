@@ -149,9 +149,10 @@ export default function Ludo() {
     const validMoves = getValidTokens(gameState.turn, roll, gameState);
 
     const noMoves = validMoves.length === 0;
+    const ts = Date.now();
     const logEntry = {
       text: `${currentSeat.name || 'Player'} rolled ${roll}${noMoves ? ' (no moves)' : ''}`,
-      ts: Date.now()
+      ts
     };
 
     applyAndSync((prev) => {
@@ -163,7 +164,7 @@ export default function Ludo() {
           awaitingMove: false,
           availableMoves: [],
           turn: advanceTurn(prev, false),
-          lastRoll: { roll, by: currentSeat?.id },
+          lastRoll: { roll, by: currentSeat?.id, ts },
           logs: nextLogs
         };
       }
@@ -173,7 +174,7 @@ export default function Ludo() {
         dice: roll,
         awaitingMove: true,
         availableMoves: validMoves,
-        lastRoll: { roll, by: currentSeat?.id },
+        lastRoll: { roll, by: currentSeat?.id, ts },
         logs: nextLogs
       };
     });
@@ -266,13 +267,26 @@ export default function Ludo() {
     <div className="ludo-shell">
       <div className="ludo-hud">
         <div className="turn-pill" style={{ borderColor: currentSeat?.color }}>
-          <span className="dot" style={{ background: currentSeat?.color }} />
+          <span className="dot" style={{ background: currentSeat?.color, color: currentSeat?.color || '#fff' }} />
           {gameState.phase === 'FINISHED'
             ? `${currentSeat?.id === gameState.winner ? 'Winner' : 'Game Over'}`
             : `Turn: ${currentPlayerName}`}
         </div>
         <div className="dice-card">
-          <div className="dice-value">{gameState.dice ?? '—'}</div>
+          <div 
+            key={gameState.lastRoll?.ts || 'init'} 
+            className={`dice-wrapper ${gameState.lastRoll ? 'rolling' : ''}`}
+          >
+            <div className={`dice-value face-${gameState.lastRoll?.roll || 0}`}>
+              {gameState.lastRoll?.roll ? (
+                Array.from({ length: gameState.lastRoll.roll }).map((_, i) => (
+                  <span key={i} className="dice-dot" />
+                ))
+              ) : (
+                <span className="dice-text">?</span>
+              )}
+            </div>
+          </div>
           <button
             className="primary-btn"
             onClick={rollDice}
@@ -291,9 +305,9 @@ export default function Ludo() {
         {gameState.seats.map((seat, idx) => {
           const finished = gameState.tokens[seat.id]?.filter((s) => s === 57).length || 0;
           return (
-            <div key={seat.id} className={`player-card ${idx === gameState.turn ? 'active' : ''}`}>
+            <div key={seat.id} className={`player-card ${idx === gameState.turn ? 'active' : ''}`} style={{ '--pc-color': seat.color }}>
               <div className="pc-header">
-                <span className="pc-dot" style={{ background: seat.color }} />
+                <span className="pc-dot" style={{ background: seat.color, color: seat.color }} />
                 <div className="pc-name">Player {idx + 1}</div>
               </div>
               <div className="pc-meta">Finished: {finished}/4</div>
@@ -365,7 +379,7 @@ export default function Ludo() {
 
       <div className="ludo-footer">
         <div className="legend">
-          <span className="legend-dot" style={{ background: currentSeat?.color }} /> You are Player {mySeatIndex + 1}
+          <span className="legend-dot" style={{ background: currentSeat?.color, color: currentSeat?.color || '#fff' }} /> You are Player {mySeatIndex + 1}
           {gameState.awaitingMove && <span className="legend-msg">Select a highlighted pawn</span>}
         </div>
         <div className="logs">
