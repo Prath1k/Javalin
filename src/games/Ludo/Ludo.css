@@ -1,0 +1,348 @@
+.ludo-shell {
+  color: var(--text-primary);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.05), transparent 30%),
+    radial-gradient(circle at 85% 15%, rgba(0, 255, 255, 0.04), transparent 25%),
+    radial-gradient(circle at 20% 85%, rgba(255, 0, 150, 0.04), transparent 35%),
+    var(--bg-base);
+}
+
+.ludo-hud {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.turn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.turn-pill .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dice-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.dice-value {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: #1b1b1b;
+  background: linear-gradient(145deg, #f8f3e8, #e7dfce);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #ffd64d, #ffb347);
+  color: #1b1b1b;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35), 0 0 16px rgba(255, 201, 71, 0.6);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.ghost-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ghost-btn.danger {
+  color: #ff6464;
+  border-color: rgba(255, 100, 100, 0.4);
+}
+
+.player-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.player-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.player-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.pc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.pc-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.pc-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.ludo-board {
+  position: relative;
+  width: min(760px, 94vw);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3), transparent 58%),
+    linear-gradient(135deg, #f7f1e3 0%, #efe6d2 40%, #fdf7ed 100%);
+}
+
+.board-bg {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.025) 0, rgba(0, 0, 0, 0.025) 2px, transparent 2px, transparent 20px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.025) 0, rgba(0, 0, 0, 0.025) 2px, transparent 2px, transparent 20px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.corner-yard {
+  position: absolute;
+  width: 38%;
+  height: 38%;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 8px 20px rgba(0, 0, 0, 0.18);
+  z-index: 1;
+}
+
+.yard-center {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  color: #1b1b1b;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.yard-red { top: 4%; left: 4%; background: linear-gradient(135deg, #f87171, #f43f5e); }
+.yard-green { top: 4%; right: 4%; background: linear-gradient(135deg, #34d399, #10b981); }
+.yard-yellow { bottom: 4%; left: 4%; background: linear-gradient(135deg, #facc15, #eab308); }
+.yard-blue { bottom: 4%; right: 4%; background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+
+.lane {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+
+.lane-red { width: 18%; height: 60%; border: 2px solid #f43f5e; clip-path: polygon(50% 0, 62% 45%, 50% 100%, 38% 45%); filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.4)); }
+.lane-green { width: 60%; height: 18%; border: 2px solid #10b981; clip-path: polygon(0 50%, 45% 62%, 100% 50%, 45% 38%); filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.35)); }
+.lane-yellow { width: 18%; height: 60%; border: 2px solid #eab308; clip-path: polygon(50% 0, 62% 45%, 50% 100%, 38% 45%); transform: translate(-50%, -50%) rotate(180deg); filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.35)); }
+.lane-blue { width: 60%; height: 18%; border: 2px solid #3b82f6; clip-path: polygon(0 50%, 45% 62%, 100% 50%, 45% 38%); transform: translate(-50%, -50%) rotate(180deg); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.4)); }
+
+.track-cell,
+.home-cell {
+  position: absolute;
+  width: 9%;
+  height: 9%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  z-index: 2;
+}
+
+.track-cell {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.track-cell.safe {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 240, 240, 0.95));
+  border-color: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12), 0 0 12px rgba(255, 215, 0, 0.35);
+}
+
+.track-cell .cell-mark {
+  width: 6px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+}
+
+.home-cell {
+  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.center-star {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.6rem;
+  color: #d97706;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.token {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 4px 8px rgba(255, 255, 255, 0.25), 0 8px 16px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+  color: #000;
+  font-weight: 800;
+  cursor: default;
+  z-index: 4;
+}
+
+.token.clickable {
+  cursor: pointer;
+  box-shadow: 0 0 14px var(--accent-glow), 0 8px 16px rgba(0, 0, 0, 0.4);
+  outline: 2px solid var(--accent);
+}
+
+.token-label {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+
+.ludo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.legend-msg {
+  margin-left: 8px;
+  color: var(--accent);
+}
+
+.logs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 10px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.log-line {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.ludo-rules {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--text-secondary);
+}
+
+.ludo-rules h4 {
+  margin-top: 0;
+  color: var(--text-primary);
+}
+
+.ludo-rules ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.ludo-rules li {
+  margin: 6px 0;
+}

@@ -15,6 +15,7 @@ import NeonPong from './games/NeonPong/NeonPong';
 import SortViz from './games/SortViz/SortViz';
 import HexConnect from './games/HexConnect/HexConnect';
 import ChessGame from './games/Chess/Chess';
+import LudoGame from './games/Ludo/Ludo';
 import SpaceInvaders from './games/SpaceInvaders/SpaceInvaders';
 import PacMan from './games/PacMan/PacMan';
 import OrbChase from './games/OrbChase/OrbChase';
@@ -174,6 +175,16 @@ const GAMES = [
     icon: '♚',
     image: imgChess,
     component: ChessGame,
+    status: 'active',
+  },
+  {
+    id: 'ludo-royale',
+    title: 'Ludo Royale',
+    genre: 'Board / Party',
+    desc: 'Classic Ludo with local or global rooms inspired by Ludo King.',
+    icon: '🎲',
+    image: null,
+    component: LudoGame,
     status: 'active',
   },
   {
