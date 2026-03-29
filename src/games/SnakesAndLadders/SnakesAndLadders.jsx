@@ -1,189 +1,209 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useMultiplayer } from '../../hooks/useMultiplayer';
 import MultiplayerLobby from '../../components/MultiplayerLobby/MultiplayerLobby';
 import './SnakesAndLadders.css';
 
 const MAX_PLAYERS = 4;
-const PLAYER_COLORS = ['#3b82f6', '#ec4899', '#f8fafc', '#10b981']; // Blue, Pink, White, Green (Poki style)
+const PLAYER_COLORS = ['#3b82f6', '#ec4899', '#f97316', '#10b981'];
+const PLAYER_EMOJIS = ['🔵', '🩷', '🟠', '🟢'];
 
 const SPECIALS = {
-  // Ladders (Go Up)
-  4: 14,
-  9: 31,
-  20: 38,
-  28: 84,
-  40: 59,
-  51: 67,
-  63: 81,
-  71: 91,
-  // Snakes (Go Down)
-  17: 7,
-  54: 34,
-  62: 19,
-  64: 60,
-  87: 24,
-  93: 73,
-  95: 75,
-  99: 78
+  4: 14, 9: 31, 20: 38, 28: 84, 40: 59, 51: 67, 63: 81, 71: 91,
+  17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 99: 78
 };
 
 const defaultState = {
-  phase: 'LOBBY',
-  seats: [],
-  positions: {}, // { playerId: 0 }
-  turn: 0,
-  dice: null, // the active dice required to move
-  lastRoll: null, // { roll, by, ts }
-  winner: null,
-  logs: []
+  phase: 'LOBBY', seats: [], positions: {}, turn: 0,
+  dice: null, lastRoll: null, winner: null, animating: false, logs: []
 };
 
 function getTileCoordinates(pos) {
-  if (pos <= 0) return { x: 5, y: 102 }; // Start position safely tucked at bottom edge
+  if (pos <= 0) return { x: -5, y: 105 };
   if (pos > 100) pos = 100;
-  
   const zeroBased = pos - 1;
   const row = Math.floor(zeroBased / 10);
   const col = zeroBased % 10;
-  
-  const isLeftToRight = row % 2 === 0;
-  const actualCol = isLeftToRight ? col : 9 - col;
-  
-  return {
-    x: actualCol * 10 + 5,
-    y: 100 - (row * 10 + 5)
+  const actualCol = row % 2 === 0 ? col : 9 - col;
+  return { x: actualCol * 10 + 5, y: 100 - (row * 10 + 5) };
+}
+
+function getTileColor(num) {
+  const row = Math.floor((num - 1) / 10);
+  const col = (num - 1) % 10;
+  const isDark = (row + col) % 2 === 1;
+  const colors = [
+    { light: '#d4edda', dark: '#b8daff' },
+    { light: '#fff3cd', dark: '#f5c6cb' },
+    { light: '#d4edda', dark: '#b8daff' },
+    { light: '#fff3cd', dark: '#f5c6cb' },
+    { light: '#d4edda', dark: '#b8daff' },
+  ];
+  const pair = colors[Math.floor(row / 2) % colors.length];
+  return isDark ? pair.dark : pair.light;
+}
+
+function Confetti() {
+  const pieces = useMemo(() =>
+    Array.from({ length: 60 }, (_, i) => ({
+      id: i, left: Math.random() * 100, delay: Math.random() * 3,
+      duration: 2 + Math.random() * 3,
+      color: ['#3b82f6', '#ec4899', '#f97316', '#10b981', '#8b5cf6', '#f59e0b'][Math.floor(Math.random() * 6)],
+      size: 6 + Math.random() * 10, rotation: Math.random() * 360,
+    })), []);
+  return (
+    <div className="sal-confetti">
+      {pieces.map(p => (
+        <div key={p.id} className="sal-confetti-piece" style={{
+          left: `${p.left}%`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s`,
+          backgroundColor: p.color, width: p.size, height: p.size * 0.6, transform: `rotate(${p.rotation}deg)`,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function DiceFace3D({ value }) {
+  const positions = {
+    1: ['center'], 2: ['top-right', 'bottom-left'],
+    3: ['top-right', 'center', 'bottom-left'],
+    4: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+    5: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
+    6: ['top-left', 'top-right', 'mid-left', 'mid-right', 'bottom-left', 'bottom-right'],
   };
+  return (
+    <div className="sal-dice-face">
+      {(positions[value] || positions[1]).map((pos, i) => (
+        <span key={i} className={`sal-pip ${pos}`} />
+      ))}
+    </div>
+  );
 }
 
 export default function SnakesAndLadders() {
   const multiplayerData = useMultiplayer('snakes-ladders');
   const { status, isOnline, localPlayerId, networkState, broadcastState, disconnect } = multiplayerData;
-
   const [gameState, setGameState] = useState(defaultState);
+  const [diceRolling, setDiceRolling] = useState(false);
+  const [snakeEffect, setSnakeEffect] = useState(null);
+  const [ladderEffect, setLadderEffect] = useState(null);
+  const [bounceEffect, setBounceEffect] = useState(false);
 
-  // Sync network state locally
   useEffect(() => {
-    if (isOnline && networkState && networkState.phase) {
-      setGameState(networkState);
-    }
+    if (isOnline && networkState && networkState.phase) setGameState(networkState);
   }, [isOnline, networkState]);
 
-  const applyAndSync = (updater) => {
+  const applyAndSync = useCallback((updater) => {
     setGameState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (isOnline && status === 'connected') {
-        broadcastState(next);
-      }
+      if (isOnline && status === 'connected') broadcastState(next);
       return next;
     });
-  };
+  }, [isOnline, status, broadcastState]);
 
-  const handleStartGame = (playerCount, activePlayers) => {
-    const seats = activePlayers
-      .slice(0, MAX_PLAYERS)
-      .map((p, idx) => ({ ...p, seat: idx, color: PLAYER_COLORS[idx % PLAYER_COLORS.length] }));
-
+  const handleStartGame = useCallback((playerCount, activePlayers) => {
+    const seats = activePlayers.slice(0, MAX_PLAYERS).map((p, idx) => ({
+      ...p, seat: idx, color: PLAYER_COLORS[idx % PLAYER_COLORS.length],
+      name: p.name || `Player ${idx + 1}`
+    }));
     const positions = {};
-    seats.forEach((seat) => {
-      positions[seat.id] = 0; // 0 means starting area
+    seats.forEach((seat) => { positions[seat.id] = 0; });
+    applyAndSync({ ...defaultState, phase: 'PLAY', seats, positions,
+      logs: [{ text: '🏁 Race to 100! Roll the dice!', ts: Date.now() }]
     });
-
-    applyAndSync({
-      ...defaultState,
-      phase: 'PLAY',
-      seats,
-      positions,
-      logs: [{ text: 'Game started. The race to 100 begins!', ts: Date.now() }]
-    });
-  };
+  }, [applyAndSync]);
 
   const currentSeat = gameState.seats[gameState.turn];
   const isMyTurn = !isOnline || currentSeat?.id === localPlayerId;
-  const mySeatIndex = gameState.seats.findIndex((s) => s.id === localPlayerId);
 
-  // Add delay helper for animations
-  const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-
-  const rollDice = async () => {
-    if (gameState.phase !== 'PLAY' || !currentSeat || !isMyTurn) return;
-
+  const rollDice = useCallback(async () => {
+    if (gameState.phase !== 'PLAY' || !currentSeat || !isMyTurn || diceRolling) return;
     const roll = Math.floor(Math.random() * 6) + 1;
     const ts = Date.now();
-    
-    // First, broadcast the roll explicitly (so animation triggers for everyone immediately)
+    setDiceRolling(true);
+
     applyAndSync((prev) => ({
       ...prev,
       lastRoll: { roll, by: currentSeat.id, ts },
-      logs: [...prev.logs, { text: `${currentSeat.name || 'Player'} rolled ${roll}`, ts }].slice(-6)
+      logs: [...prev.logs, {
+        text: `${PLAYER_EMOJIS[gameState.turn]} ${currentSeat.name} rolled ${roll}${roll === 6 ? ' — Extra turn!' : ''}`, ts
+      }].slice(-10)
     }));
 
-    // Wait for dice rolling animation to finish visually (e.g. 600ms) before hopping
-    await delay(700);
+    await new Promise(r => setTimeout(r, 800));
+    setDiceRolling(false);
 
-    // Apply token move
     applyAndSync((prev) => {
       const poses = { ...prev.positions };
-      let finalPos = poses[currentSeat.id] + roll;
-      
-      // Exact hit to 100, or bounce back? Poki classic allows reaching 100 directly. Bouncing is optional but common. 
-      // Let's implement absolute stopping at 100 (if roll exceeds, bounce back or just stay? We'll clamp to 100 for simplicity).
-      if (finalPos > 100) {
-        finalPos = 100 - (finalPos - 100); // Bounce back rule
+      const currentPos = poses[currentSeat.id];
+      let rawTarget = currentPos + roll;
+      let bounced = false;
+
+      if (rawTarget > 100) {
+        rawTarget = 100 - (rawTarget - 100);
+        bounced = true;
       }
 
-      // Check for Snakes or Ladders
-      let landedOnSpecial = false;
-      let targetPos = finalPos;
-      if (SPECIALS[finalPos]) {
-        landedOnSpecial = true;
-        targetPos = SPECIALS[finalPos];
+      let finalPos = rawTarget;
+      let specialType = null;
+
+      if (SPECIALS[rawTarget]) {
+        finalPos = SPECIALS[rawTarget];
+        specialType = finalPos > rawTarget ? 'ladder' : 'snake';
       }
 
-      poses[currentSeat.id] = targetPos;
-
-      const hasWon = targetPos === 100;
+      poses[currentSeat.id] = finalPos;
+      const hasWon = finalPos === 100;
       const extraTurn = roll === 6 && !hasWon;
-
       let nextLogs = [...prev.logs];
-      if (landedOnSpecial) {
-        const isLadder = targetPos > finalPos;
-        nextLogs.push({
-          text: isLadder ? `Climbed a ladder to ${targetPos}!` : `Oh no! Bitten by a snake down to ${targetPos}.`,
-          ts: Date.now() + 1
-        });
+
+      if (bounced) {
+        nextLogs.push({ text: `↩️ Bounced back to ${rawTarget}`, ts: Date.now() });
+        setBounceEffect(true);
+        setTimeout(() => setBounceEffect(false), 600);
       }
-      
+
+      if (specialType === 'ladder') {
+        nextLogs.push({ text: `🪜 Ladder! ${rawTarget} → ${finalPos}`, ts: Date.now() + 1 });
+        setLadderEffect({ from: rawTarget, to: finalPos, ts: Date.now() });
+        setTimeout(() => setLadderEffect(null), 1500);
+      } else if (specialType === 'snake') {
+        nextLogs.push({ text: `🐍 Snake! ${rawTarget} → ${finalPos}`, ts: Date.now() + 1 });
+        setSnakeEffect({ from: rawTarget, to: finalPos, ts: Date.now() });
+        setTimeout(() => setSnakeEffect(null), 1500);
+      }
+
       if (hasWon) {
-        nextLogs.push({ text: `${currentSeat.name || 'Player'} reached 100 and won!`, ts: Date.now() + 2 });
+        nextLogs.push({ text: `🏆 ${currentSeat.name} wins!`, ts: Date.now() + 2 });
       }
 
       return {
-        ...prev,
-        positions: poses,
+        ...prev, positions: poses,
         turn: hasWon || extraTurn ? prev.turn : (prev.turn + 1) % prev.seats.length,
         winner: hasWon ? currentSeat.id : prev.winner,
         phase: hasWon ? 'FINISHED' : prev.phase,
-        logs: nextLogs.slice(-6)
+        logs: nextLogs.slice(-10)
       };
     });
-  };
+  }, [gameState, currentSeat, isMyTurn, diceRolling, applyAndSync]);
 
   const resetToLobby = () => applyAndSync(defaultState);
 
-  // Generate 100 board tiles
   const tiles = useMemo(() => {
     const arr = [];
     for (let r = 9; r >= 0; r--) {
       for (let c = 0; c < 10; c++) {
-        const isLeftToRight = r % 2 === 0;
-        const col = isLeftToRight ? c : 9 - c;
+        const col = r % 2 === 0 ? c : 9 - c;
         const num = r * 10 + col + 1;
-        
-        // Poki style has alternating color patterns
-        const isDark = (r + c) % 2 === 1;
+        const isLadder = SPECIALS[num] !== undefined && SPECIALS[num] > num;
+        const isSnake = SPECIALS[num] !== undefined && SPECIALS[num] < num;
         arr.push(
-          <div key={`tile-${num}`} className={`sl-tile ${isDark ? 'sl-dark' : 'sl-light'}`}>
-            <span className="sl-tile-num">{num}</span>
+          <div key={`tile-${num}`}
+            className={`sal-tile ${isLadder ? 'ladder-start' : ''} ${isSnake ? 'snake-start' : ''}`}
+            style={{ backgroundColor: getTileColor(num) }}>
+            <span className="sal-tile-num">{num}</span>
+            {num === 100 && <span className="finish-flag">🏁</span>}
+            {isLadder && <span className="special-icon ladder-icon">🪜</span>}
+            {isSnake && <span className="special-icon snake-icon">🐍</span>}
           </div>
         );
       }
@@ -191,227 +211,212 @@ export default function SnakesAndLadders() {
     return arr;
   }, []);
 
-  const renderLaddersAndSnakes = useMemo(() => {
-    return (
-      <svg className="board-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {/* Defining gradients/patterns for thick rich snakes & ladders */}
-        <defs>
-          <linearGradient id="ladder-wood" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#b45309" />
-            <stop offset="50%" stopColor="#f59e0b" />
-            <stop offset="100%" stopColor="#b45309" />
-          </linearGradient>
-          {/* We will draw custom SVG styles inline below */}
-        </defs>
+  const renderSpecials = useMemo(() => (
+    <svg className="sal-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <filter id="sal-shadow"><feDropShadow dx="0.3" dy="0.5" stdDeviation="0.5" floodOpacity="0.3" /></filter>
+      </defs>
+      {Object.entries(SPECIALS).map(([start, end], idx) => {
+        const sObj = getTileCoordinates(parseInt(start));
+        const eObj = getTileCoordinates(parseInt(end));
+        const isLadder = parseInt(end) > parseInt(start);
 
-        {Object.entries(SPECIALS).map(([start, end], idx) => {
-          const sObj = getTileCoordinates(parseInt(start));
-          const eObj = getTileCoordinates(parseInt(end));
-          const isLadder = parseInt(end) > parseInt(start);
+        if (isLadder) {
+          const dx = eObj.x - sObj.x, dy = eObj.y - sObj.y;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          const rox = (dy / len) * 2.0, roy = -(dx / len) * 2.0;
+          const numRungs = Math.max(3, Math.floor(len / 5));
+          return (
+            <g key={`ladder-${idx}`} className="sal-ladder" filter="url(#sal-shadow)">
+              <line x1={sObj.x - rox} y1={sObj.y - roy} x2={eObj.x - rox} y2={eObj.y - roy} stroke="#b45309" strokeWidth="1.8" strokeLinecap="round" />
+              <line x1={sObj.x + rox} y1={sObj.y + roy} x2={eObj.x + rox} y2={eObj.y + roy} stroke="#b45309" strokeWidth="1.8" strokeLinecap="round" />
+              {Array.from({ length: numRungs }).map((_, ri) => {
+                const t = (ri + 1) / (numRungs + 1);
+                const mx = sObj.x + dx * t, my = sObj.y + dy * t;
+                return <line key={ri} x1={mx - rox} y1={my - roy} x2={mx + rox} y2={my + roy} stroke="#d97706" strokeWidth="1.4" strokeLinecap="round" />;
+              })}
+              <line x1={sObj.x - rox * 0.3} y1={sObj.y - roy * 0.3} x2={eObj.x - rox * 0.3} y2={eObj.y - roy * 0.3} stroke="rgba(255,255,255,0.25)" strokeWidth="0.6" strokeLinecap="round" />
+            </g>
+          );
+        } else {
+          const snakeColors = ['#dc2626', '#059669', '#7c3aed', '#ea580c', '#0891b2', '#c026d3', '#e11d48', '#4f46e5'];
+          const mainColor = snakeColors[idx % snakeColors.length];
+          const dx = eObj.x - sObj.x, dy = eObj.y - sObj.y;
+          const mx = (sObj.x + eObj.x) / 2, my = (sObj.y + eObj.y) / 2;
+          const px = -dy * 0.25, py = dx * 0.25;
+          const path = `M ${sObj.x} ${sObj.y} C ${sObj.x + dx * 0.25 + px} ${sObj.y + dy * 0.25 + py}, ${mx - px} ${my - py}, ${mx} ${my} S ${sObj.x + dx * 0.75 + px} ${sObj.y + dy * 0.75 + py}, ${eObj.x} ${eObj.y}`;
+          return (
+            <g key={`snake-${idx}`} className="sal-snake" filter="url(#sal-shadow)">
+              <path d={path} fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="5" strokeLinecap="round" />
+              <path d={path} fill="none" stroke={mainColor} strokeWidth="4" strokeLinecap="round" />
+              <path d={path} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="4" strokeDasharray="1.5 3" strokeLinecap="round" />
+              <circle cx={sObj.x} cy={sObj.y} r="3.5" fill={mainColor} stroke="rgba(0,0,0,0.3)" strokeWidth="0.5" />
+              <circle cx={sObj.x - 1} cy={sObj.y - 1.2} r="1.3" fill="#fff" />
+              <circle cx={sObj.x + 1} cy={sObj.y - 1.2} r="1.3" fill="#fff" />
+              <circle cx={sObj.x - 0.8} cy={sObj.y - 1.3} r="0.6" fill="#111" />
+              <circle cx={sObj.x + 1.2} cy={sObj.y - 1.3} r="0.6" fill="#111" />
+              <path d={`M ${sObj.x} ${sObj.y + 2} L ${sObj.x - 1} ${sObj.y + 4} M ${sObj.x} ${sObj.y + 2} L ${sObj.x + 1} ${sObj.y + 4}`}
+                fill="none" stroke="#ef4444" strokeWidth="0.5" strokeLinecap="round" />
+              <circle cx={eObj.x} cy={eObj.y} r="1.5" fill={mainColor} opacity="0.6" />
+            </g>
+          );
+        }
+      })}
+    </svg>
+  ), []);
 
-          if (isLadder) {
-            // Draw a Ladder
-            // Calculate angle and distance to place rungs properly, or just use a robust SVG path
-            const dx = eObj.x - sObj.x;
-            const dy = eObj.y - sObj.y;
-            const len = Math.sqrt(dx * dx + dy * dy);
-            
-            // Draw 2 side rails
-            const railOffsetX = (dy / len) * 2.5; 
-            const railOffsetY = -(dx / len) * 2.5;
-
-            return (
-              <g key={`ladder-${idx}`} className="ladder-group">
-                <line x1={sObj.x - railOffsetX} y1={sObj.y - railOffsetY} x2={eObj.x - railOffsetX} y2={eObj.y - railOffsetY} stroke="url(#ladder-wood)" strokeWidth="1.5" strokeLinecap="round" className="ladder-rail" />
-                <line x1={sObj.x + railOffsetX} y1={sObj.y + railOffsetY} x2={eObj.x + railOffsetX} y2={eObj.y + railOffsetY} stroke="url(#ladder-wood)" strokeWidth="1.5" strokeLinecap="round" className="ladder-rail" />
-                {/* Rungs */}
-                {Array.from({ length: Math.max(3, Math.floor(len / 4)) }).map((_, rIdx, arr) => {
-                  const t = (rIdx + 1) / (arr.length + 1);
-                  const mx = sObj.x + dx * t;
-                  const my = sObj.y + dy * t;
-                  return (
-                    <line key={`rung-${rIdx}`} x1={mx - railOffsetX} y1={my - railOffsetY} x2={mx + railOffsetX} y2={my + railOffsetY} stroke="url(#ladder-wood)" strokeWidth="1.2" />
-                  );
-                })}
-              </g>
-            );
-          } else {
-            // Draw a Snake
-            // We use an SVG cubic bezier path to give it a curved snake body
-            const midX1 = sObj.x + (eObj.x - sObj.x) / 3 - 5;
-            const midY1 = sObj.y + (eObj.y - sObj.y) / 3 - 5;
-            const midX2 = sObj.x + 2 * (eObj.x - sObj.x) / 3 + 5;
-            const midY2 = sObj.y + 2 * (eObj.y - sObj.y) / 3 + 5;
-            
-            // Generate distinct colors for snakes based on ID
-            const snakeHues = [0, 120, 300, 30, 200];
-            const hue = snakeHues[idx % snakeHues.length];
-
-            return (
-              <g key={`snake-${idx}`} className="snake-group">
-                <path 
-                  d={`M ${sObj.x} ${sObj.y} C ${midX1} ${midY1}, ${midX2} ${midY2}, ${eObj.x} ${eObj.y}`} 
-                  fill="none" 
-                  stroke={`hsl(${hue}, 80%, 40%)`} 
-                  strokeWidth="3.5" 
-                  strokeLinecap="round" 
-                  className="snake-body"
-                />
-                {/* Snake Pattern Overlay */}
-                <path 
-                  d={`M ${sObj.x} ${sObj.y} C ${midX1} ${midY1}, ${midX2} ${midY2}, ${eObj.x} ${eObj.y}`} 
-                  fill="none" 
-                  stroke="rgba(0,0,0,0.3)" 
-                  strokeWidth="3.5" 
-                  strokeDasharray="2 4" 
-                  strokeLinecap="round"
-                />
-                {/* Snake Head */}
-                <circle cx={sObj.x} cy={sObj.y} r="3.5" fill={`hsl(${hue}, 80%, 40%)`} />
-                <circle cx={sObj.x} cy={sObj.y} r="1.5" fill="#fff" />
-                <circle cx={sObj.x + 0.5} cy={sObj.y - 0.5} r="0.75" fill="#000" />
-              </g>
-            );
-          }
-        })}
-      </svg>
-    );
-  }, []);
-
+  // ===== LOBBY =====
   if (gameState.phase === 'LOBBY' || status !== 'connected') {
     return (
-      <div className="sl-wrapper">
-        <MultiplayerLobby
-          gameTitle="SNAKES & LADDERS"
-          maxPlayers={MAX_PLAYERS}
-          onStartLocal={handleStartGame}
-          hookData={multiplayerData}
-        />
+      <div className="sal-wrapper">
+        <MultiplayerLobby gameTitle="SNAKES & LADDERS" maxPlayers={MAX_PLAYERS}
+          onStartLocal={handleStartGame} hookData={multiplayerData} />
+        <div className="sal-rules-card">
+          <h4>📖 How to Play</h4>
+          <div className="sal-rules-grid">
+            <div className="sal-rule"><span className="sal-rule-icon">🎲</span><p>Roll dice & move forward.</p></div>
+            <div className="sal-rule"><span className="sal-rule-icon">🪜</span><p>Land on a ladder to climb up!</p></div>
+            <div className="sal-rule"><span className="sal-rule-icon">🐍</span><p>Land on a snake head to slide down.</p></div>
+            <div className="sal-rule"><span className="sal-rule-icon">🏆</span><p>First to reach 100 wins!</p></div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const currentPlayerName = currentSeat?.name || `Player ${gameState.turn + 1}`;
+  const winnerSeat = gameState.seats.find(s => s.id === gameState.winner);
 
   return (
-    <div className="sl-wrapper playing">
-      <div className="sl-main">
-        {/* Left Sidebar (Turn indicators) */}
-        <div className="sl-sidebar">
-          <div className="sl-panel">
-            <h3 className="panel-title">Players</h3>
-            <div className="sl-players">
-              {gameState.seats.map((seat, idx) => (
-                <div key={seat.id} className={`sl-player-card ${idx === gameState.turn ? 'active' : ''}`} style={{ '--pcolor': seat.color }}>
-                  <div className="sl-p-avatar" style={{ backgroundColor: seat.color }}>
-                    {idx === gameState.turn && <span className="sl-turn-arrow">▶</span>}
+    <div className={`sal-wrapper playing ${bounceEffect ? 'shake' : ''}`}>
+      {gameState.phase === 'FINISHED' && <Confetti />}
+
+      {snakeEffect && (
+        <div className="sal-effect-toast snake-toast" key={snakeEffect.ts}>
+          🐍 Snake! {snakeEffect.from} → {snakeEffect.to}
+        </div>
+      )}
+      {ladderEffect && (
+        <div className="sal-effect-toast ladder-toast" key={ladderEffect.ts}>
+          🪜 Ladder! {ladderEffect.from} → {ladderEffect.to}
+        </div>
+      )}
+
+      {gameState.phase === 'FINISHED' && winnerSeat && (
+        <div className="sal-winner-overlay">
+          <div className="sal-winner-card">
+            <div className="sal-winner-crown">🏆</div>
+            <h2 style={{ color: winnerSeat.color }}>{winnerSeat.name} Wins!</h2>
+            <p>Reached square 100 first!</p>
+            <button className="sal-action-btn primary" onClick={resetToLobby}>Play Again</button>
+          </div>
+        </div>
+      )}
+
+      <div className="sal-game-layout">
+        {/* LEFT: Controls + Players */}
+        <div className="sal-side-panel">
+          {/* Dice section */}
+          <div className="sal-panel-card sal-dice-card">
+            <div className="sal-turn-label" style={{ color: currentSeat?.color }}>
+              {gameState.phase === 'FINISHED' ? '🎉 Game Over!' : `${currentSeat?.name}'s Turn`}
+            </div>
+            <div className="sal-dice-row">
+              <div className={`sal-dice-box ${diceRolling ? 'rolling' : ''} ${isMyTurn && gameState.phase === 'PLAY' && !diceRolling ? 'clickable' : ''}`}
+                onClick={rollDice}>
+                <div className="sal-dice-inner" key={gameState.lastRoll?.ts || 'init'}>
+                  <DiceFace3D value={gameState.lastRoll?.roll || 1} />
+                </div>
+              </div>
+              <div className="sal-dice-actions">
+                <button className="sal-action-btn primary sal-roll-button"
+                  onClick={rollDice}
+                  disabled={!isMyTurn || gameState.phase === 'FINISHED' || diceRolling}
+                  style={{ '--btn-color': currentSeat?.color || '#3b82f6' }}>
+                  {diceRolling ? '🎲 Rolling...' : isMyTurn ? '🎲 Roll Dice' : '⏳ Waiting...'}
+                </button>
+                {gameState.lastRoll?.roll === 6 && !diceRolling && (
+                  <div className="sal-six-badge">🎯 SIX! Roll Again!</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Players */}
+          <div className="sal-panel-card">
+            <h3 className="sal-panel-title">Players</h3>
+            <div className="sal-players-list">
+              {gameState.seats.map((seat, idx) => {
+                const isActive = idx === gameState.turn && gameState.phase !== 'FINISHED';
+                const pos = gameState.positions[seat.id] || 0;
+                return (
+                  <div key={seat.id} className={`sal-player-card ${isActive ? 'active' : ''}`}
+                    style={{ '--pcolor': seat.color }}>
+                    <div className="sal-player-avatar" style={{ backgroundColor: seat.color }}>
+                      {seat.name?.[0]?.toUpperCase() || idx + 1}
+                    </div>
+                    <div className="sal-player-details">
+                      <span className="sal-player-name">{seat.name}</span>
+                      <div className="sal-progress-bar">
+                        <div className="sal-progress-fill" style={{ width: `${pos}%`, backgroundColor: seat.color }} />
+                      </div>
+                      <span className="sal-pos-label">Tile {pos}</span>
+                    </div>
+                    {isActive && <span className="sal-active-indicator" style={{ color: seat.color }}>▶</span>}
                   </div>
-                  <div className="sl-p-info">
-                    <span className="sl-p-name">{seat.name || `Player ${idx + 1}`}</span>
-                    <span className="sl-p-pos">Pos: {gameState.positions[seat.id]}</span>
-                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Game Log */}
+          <div className="sal-panel-card sal-log-panel">
+            <h4 className="sal-log-title">Game Log</h4>
+            <div className="sal-log-entries">
+              {gameState.logs.map((log, i) => (
+                <div key={log.ts + i} className={`sal-log-entry ${i === gameState.logs.length - 1 ? 'latest' : ''}`}>
+                  {log.text}
                 </div>
               ))}
             </div>
-            {gameState.phase === 'FINISHED' && (
-              <div className="sl-winner-banner" style={{ color: gameState.seats.find(s=>s.id === gameState.winner)?.color }}>
-                🎉 WINNER!
-              </div>
-            )}
           </div>
 
-          <div className="sl-panel sl-logs">
-            {gameState.logs.map((log, i) => (
-              <div key={log.ts + i} className="sl-log-line">{log.text}</div>
-            ))}
-          </div>
-          
-          <div className="sl-actions">
-            <button className="sl-btn" onClick={resetToLobby}>Reset</button>
-            <button className="sl-btn danger" onClick={disconnect}>Leave</button>
+          <div className="sal-control-btns">
+            <button className="sal-action-btn ghost" onClick={resetToLobby}>🔄 Reset</button>
+            <button className="sal-action-btn ghost danger" onClick={disconnect}>🚪 Leave</button>
           </div>
         </div>
 
-        {/* Center Board Frame */}
-        <div className="sl-board-container">
-          <div className="sl-board">
-            <div className="sl-board-grid">
-              {tiles}
+        {/* RIGHT: Board */}
+        <div className="sal-board-area">
+          <div className="sal-board-frame">
+            <div className="sal-board">
+              <div className="sal-grid">{tiles}</div>
+              {renderSpecials}
+              {gameState.seats.map((seat, sIdx) => {
+                const posVal = gameState.positions[seat.id] || 0;
+                const { x, y } = getTileCoordinates(posVal);
+                const samePosList = gameState.seats.filter((s, i) =>
+                  i !== sIdx && (gameState.positions[s.id] || 0) === posVal && posVal > 0
+                );
+                const totalOnTile = samePosList.length + 1;
+                const myIdxOnTile = gameState.seats.filter((s, i) =>
+                  i < sIdx && (gameState.positions[s.id] || 0) === posVal && posVal > 0
+                ).length;
+                const stackOffsets = [{ x: 0, y: 0 }, { x: 3, y: -2 }, { x: -2, y: 2 }, { x: 3, y: 2 }];
+                const offset = totalOnTile > 1 ? stackOffsets[myIdxOnTile % 4] : { x: 0, y: 0 };
+                return (
+                  <div key={seat.id}
+                    className={`sal-token ${gameState.turn === sIdx && gameState.phase !== 'FINISHED' ? 'active' : ''}`}
+                    style={{
+                      left: `${x + offset.x}%`, top: `${y + offset.y}%`,
+                      backgroundColor: seat.color, '--token-color': seat.color, zIndex: 10 + sIdx
+                    }}>
+                    <span className="sal-token-label">{seat.name?.[0]?.toUpperCase() || sIdx + 1}</span>
+                    <div className="sal-token-shine" />
+                  </div>
+                );
+              })}
             </div>
-            
-            {renderLaddersAndSnakes}
-
-            {/* Start 'Nest' UI */}
-            <div className="sl-start-nest" style={{ left: '5%', top: '105%' }}>
-              Start
-            </div>
-
-            {/* Tokens */}
-            {gameState.seats.map((seat, sIdx) => {
-              const posVal = gameState.positions[seat.id];
-              const { x, y } = getTileCoordinates(posVal);
-              return (
-                <div
-                  key={seat.id}
-                  className={`sl-token ${gameState.turn === sIdx ? 'active' : ''}`}
-                  style={{
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    backgroundColor: seat.color,
-                    '--token-color': seat.color,
-                    zIndex: posVal === 0 ? sIdx : posVal // Sort order by progression
-                  }}
-                >
-                  <div className="sl-token-glint" />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Dice Section */}
-        <div className="sl-dice-section">
-          <div className="sl-panel center-content">
-            <div className="dice-turn-label" style={{ color: currentSeat?.color }}>
-              {gameState.phase === 'FINISHED' ? 'Game Over' : `${currentPlayerName}'s Turn`}
-            </div>
-            <div className="sl-dice-container" onClick={rollDice}>
-              <div 
-                key={gameState.lastRoll?.ts || 'init'} 
-                className={`sl-dice3d face-${gameState.lastRoll?.roll || 1} ${gameState.lastRoll?.ts ? 'rolling' : ''}`}
-              >
-                {/* 3D Dice faces mapping */}
-                <div className="dice-side front"><span className="dot center"></span></div>
-                <div className="dice-side back">
-                  <span className="dot top-left"></span><span className="dot bottom-right"></span>
-                </div>
-                <div className="dice-side right">
-                  <span className="dot top-left"></span><span className="dot center"></span><span className="dot bottom-right"></span>
-                </div>
-                <div className="dice-side left">
-                  <span className="dot top-left"></span><span className="dot top-right"></span>
-                  <span className="dot bottom-left"></span><span className="dot bottom-right"></span>
-                </div>
-                <div className="dice-side top">
-                  <span className="dot top-left"></span><span className="dot top-right"></span><span className="dot center"></span>
-                  <span className="dot bottom-left"></span><span className="dot bottom-right"></span>
-                </div>
-                <div className="dice-side bottom">
-                  <span className="dot top-left"></span><span className="dot top-right"></span>
-                  <span className="dot center-left"></span><span className="dot center-right"></span>
-                  <span className="dot bottom-left"></span><span className="dot bottom-right"></span>
-                </div>
-              </div>
-            </div>
-            
-            <button
-              className="sl-roll-btn"
-              onClick={rollDice}
-              disabled={!isMyTurn || gameState.phase === 'FINISHED'}
-              style={{ backgroundColor: isMyTurn ? currentSeat?.color : '#64748b' }}
-            >
-              {isMyTurn ? (gameState.lastRoll?.roll === 6 ? 'Roll Again' : 'Roll Dice') : 'Waiting...'}
-            </button>
           </div>
         </div>
       </div>

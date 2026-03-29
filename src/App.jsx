@@ -492,8 +492,17 @@ function HubView({ onSelectGame, searchQuery }) {
           <h2 className="hub-title">Library</h2>
           <p className="hub-subtitle">Select an experience to initialize the viewport.</p>
         </div>
-
         <div className="game-grid">
+          {filtered.length === 0 && searchQuery && (
+            <div className="search-empty" style={{ gridColumn: '1 / -1' }}>
+              <Icon name="search_off" className="search-empty-icon" />
+              <div className="search-empty-text">
+                <h3>No experiences found</h3>
+                <p>Try adjusting your search query or browse the collection.</p>
+              </div>
+            </div>
+          )}
+
           {filtered.map(game => (
             <GameCard key={game.id} game={game} onClick={onSelectGame} />
           ))}
@@ -747,114 +756,66 @@ export default function App() {
       </main>
 
       {showLoginModal && (
-        <div className="modal-overlay" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(8px)'
-        }}>
-          <div className="modal-content" style={{
-            backgroundColor: 'var(--bg-card)', padding: '32px',
-            borderRadius: '16px', width: '100%', maxWidth: '400px',
-            border: '1px solid var(--border)',
-            display: 'flex', flexDirection: 'column', gap: '24px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>{isSignUp ? 'Create Account' : 'Sign In'}</h2>
-              <button 
-                onClick={() => setShowLoginModal(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-              >
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">{isSignUp ? 'Create Account' : 'Sign In'}</h2>
+              <button onClick={() => setShowLoginModal(false)} className="modal-close">
                 <Icon name="close" />
               </button>
             </div>
 
             {authError && (
-              <div style={{ padding: '12px', backgroundColor: 'rgba(255,50,50,0.1)', color: '#ff6b6b', borderRadius: '8px', fontSize: '0.9rem' }}>
+              <div style={{ padding: '12px', backgroundColor: 'rgba(255,50,50,0.1)', color: '#ff6b6b', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '16px' }}>
                 {authError}
               </div>
             )}
 
-            <form onSubmit={handleEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Email</label>
+            <form onSubmit={handleEmailAuth} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="auth-input-group">
+                <label className="auth-label">Email Address</label>
                 <input 
                   type="email" 
+                  className="auth-input"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
-                  style={{ 
-                    width: '100%', padding: '12px', 
-                    backgroundColor: 'rgba(0,0,0,0.2)', color: '#fff', 
-                    border: '1px solid var(--border-color)', borderRadius: '8px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
                   placeholder="name@example.com"
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Password</label>
+              <div className="auth-input-group">
+                <label className="auth-label">Security Key</label>
                 <input 
                   type="password" 
+                  className="auth-input"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
-                  style={{ 
-                    width: '100%', padding: '12px', 
-                    backgroundColor: 'rgba(0,0,0,0.2)', color: '#fff', 
-                    border: '1px solid var(--border-color)', borderRadius: '8px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
                   placeholder="••••••••"
                 />
               </div>
+
               <button 
                 type="submit" 
                 disabled={authLoading}
-                style={{
-                  width: '100%', padding: '12px',
-                  backgroundColor: 'var(--primary-color)', color: '#fff',
-                  border: 'none', borderRadius: '8px',
-                  fontWeight: 600, cursor: authLoading ? 'wait' : 'pointer',
-                  opacity: authLoading ? 0.7 : 1,
-                  marginTop: '8px'
+                style={{ 
+                  marginTop: '10px', padding: '14px', 
+                  backgroundColor: 'var(--text-primary)', color: 'var(--bg-base)', 
+                  border: 'none', borderRadius: '12px', fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.2s'
                 }}
               >
-                {authLoading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+                {authLoading ? 'System Authenticating...' : (isSignUp ? 'Initialize Account' : 'Establish Session')}
               </button>
             </form>
 
-            <div style={{ textAlign: 'center', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', backgroundColor: 'var(--border)', zIndex: 0 }} />
-              <span style={{ backgroundColor: 'var(--bg-card)', padding: '0 12px', color: 'var(--text-muted)', fontSize: '0.85rem', position: 'relative', zIndex: 1 }}>
-                OR
-              </span>
-            </div>
-
-            <button 
-              onClick={handleGoogleSignIn}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '100%', padding: '12px', gap: '8px',
-                backgroundColor: 'var(--text-primary)', color: 'var(--bg-base)',
-                border: 'none', borderRadius: '8px',
-                fontWeight: 600, cursor: 'pointer'
-              }}
-            >
-              <img src="https://www.google.com/favicon.ico" alt="G" style={{ width: 16, height: 16, filter: theme === 'dark' ? 'none' : 'invert(1)' }} />
-              Continue with Google
-            </button>
-
-            <div style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-              <span 
-                onClick={() => { setIsSignUp(!isSignUp); setAuthError(''); }}
-                style={{ color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 500 }}
+            <div style={{ textAlign: 'center', marginTop: '8px' }}>
+              <button 
+                onClick={() => setIsSignUp(!isSignUp)}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem' }}
               >
-                {isSignUp ? 'Sign In' : 'Sign Up'}
-              </span>
+                {isSignUp ? 'Verify existing credentials instead' : 'Create a new player identity'}
+              </button>
             </div>
           </div>
         </div>
@@ -875,64 +836,78 @@ function SettingsModal({ user, onClose }) {
   const { highScores } = useScores();
 
   return (
-    <div className="modal-overlay" style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backdropFilter: 'blur(8px)'
-    }}>
-      <div className="modal-content" style={{
-        backgroundColor: 'var(--bg-card)', padding: '32px',
-        borderRadius: '16px', width: '100%', maxWidth: '500px',
-        border: '1px solid var(--border)',
-        display: 'flex', flexDirection: 'column', gap: '24px',
-        maxHeight: '80vh', overflowY: 'auto'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Settings & Profile</h2>
-          <button 
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-          >
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: '500px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="modal-header" style={{ marginBottom: '24px' }}>
+          <h2 className="modal-title">System & Profile</h2>
+          <button onClick={onClose} className="modal-close">
             <Icon name="close" />
           </button>
         </div>
 
-        <div>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', color: 'var(--text-primary)' }}>Account</h3>
-          {user ? (
-            <p style={{ color: 'var(--text-muted)' }}>Logged in as: <strong>{user.email || user.user_metadata?.full_name}</strong></p>
-          ) : (
-            <p style={{ color: 'var(--text-muted)' }}>You are playing as a guest. All progress is saved locally.</p>
-          )}
+        <div style={{ overflowY: 'auto', paddingRight: '12px', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <section>
+            <h3 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-label)', marginBottom: '16px' }}>Account Protocol</h3>
+            {user ? (
+              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                <p style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 500, margin: 0 }}>{user.email || user.user_metadata?.full_name}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '12px', margin: '4px 0 0 0' }}>Authorized Session</p>
+              </div>
+            ) : (
+              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>Anonymous status detected. Progress stored in local cache only.</p>
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h3 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-label)', marginBottom: '16px' }}>Performance Logs</h3>
+            {Object.keys(highScores).length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No session data recorded. Initialize an experience to generate logs.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                {Object.entries(highScores).map(([gameId, score]) => {
+                  const gameInfo = GAMES.find(g => g.id === gameId);
+                  const title = gameInfo ? gameInfo.title : gameId;
+                  return (
+                    <div key={gameId} style={{ 
+                      padding: '12px', 
+                      backgroundColor: 'rgba(255,255,255,0.04)', 
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>{title}</span>
+                      <span style={{ fontSize: '1.4rem', fontWeight: 300, color: 'var(--accent)', letterSpacing: '-0.02em' }}>{score}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section style={{ paddingBottom: '16px' }}>
+            <div style={{ padding: '16px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--border-subtle)' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-label)', marginBottom: '8px' }}>Build Index</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PixelArena v2.4.0-release</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Status: All modules operational</div>
+            </div>
+          </section>
         </div>
 
-        <div>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-primary)' }}>Your High Scores</h3>
-          {Object.keys(highScores).length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No high scores recorded yet. Go play some games!</p>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {Object.entries(highScores).map(([gameId, score]) => {
-                const gameInfo = GAMES.find(g => g.id === gameId);
-                const title = gameInfo ? gameInfo.title : gameId;
-                return (
-                  <div key={gameId} style={{ 
-                    padding: '12px', 
-                    backgroundColor: 'rgba(255,255,255,0.05)', 
-                    borderRadius: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{title}</span>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--primary-color)' }}>{score}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <button 
+          onClick={onClose}
+          style={{ 
+            marginTop: '24px', padding: '14px', 
+            backgroundColor: 'var(--text-primary)', color: 'var(--bg-base)', 
+            border: 'none', borderRadius: '12px', fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          Return to Hub
+        </button>
       </div>
     </div>
   );

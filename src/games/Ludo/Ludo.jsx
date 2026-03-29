@@ -1,209 +1,228 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useMultiplayer } from '../../hooks/useMultiplayer';
 import MultiplayerLobby from '../../components/MultiplayerLobby/MultiplayerLobby';
 import './Ludo.css';
 
 const MAX_PLAYERS = 4;
-const LUDO_COLORS = ['#e74c3c', '#27ae60', '#f1c40f', '#3498db'];
-const START_OFFSETS = [0, 13, 26, 39];
+const COLORS = ['red', 'green', 'yellow', 'blue'];
+const COLOR_HEX = { red: '#e74c3c', green: '#2ecc71', yellow: '#f1c40f', blue: '#3498db' };
+const COLOR_NAMES = { red: 'Red', green: 'Green', yellow: 'Yellow', blue: 'Blue' };
+
 const SAFE_SPOTS = [0, 8, 13, 21, 26, 34, 39, 47];
-const BASE_POSITIONS = [
-  { x: 18, y: 18 },
-  { x: 82, y: 18 },
-  { x: 82, y: 82 },
-  { x: 18, y: 82 }
-];
-const TOKEN_OFFSETS = [
-  { x: -4, y: -4 },
-  { x: 4, y: -4 },
-  { x: -4, y: 4 },
-  { x: 4, y: 4 }
+const START_OFFSETS = [0, 13, 26, 39];
+
+const MAIN_TRACK = [
+  {r:6,c:1},{r:6,c:2},{r:6,c:3},{r:6,c:4},{r:6,c:5},
+  {r:5,c:6},{r:4,c:6},{r:3,c:6},{r:2,c:6},{r:1,c:6},{r:0,c:6},
+  {r:0,c:7},{r:0,c:8},
+  {r:1,c:8},{r:2,c:8},{r:3,c:8},{r:4,c:8},{r:5,c:8},
+  {r:6,c:9},{r:6,c:10},{r:6,c:11},{r:6,c:12},{r:6,c:13},{r:6,c:14},
+  {r:7,c:14},{r:8,c:14},
+  {r:8,c:13},{r:8,c:12},{r:8,c:11},{r:8,c:10},{r:8,c:9},
+  {r:9,c:8},{r:10,c:8},{r:11,c:8},{r:12,c:8},{r:13,c:8},{r:14,c:8},
+  {r:14,c:7},{r:14,c:6},
+  {r:13,c:6},{r:12,c:6},{r:11,c:6},{r:10,c:6},{r:9,c:6},
+  {r:8,c:5},{r:8,c:4},{r:8,c:3},{r:8,c:2},{r:8,c:1},{r:8,c:0},
+  {r:7,c:0},{r:6,c:0},
 ];
 
-const defaultState = {
-  phase: 'LOBBY',
-  seats: [],
-  tokens: {},
-  turn: 0,
-  dice: null,
-  awaitingMove: false,
-  availableMoves: [],
-  winner: null,
-  lastRoll: null,
-  logs: []
+const HOME_LANES = {
+  red:    [{r:7,c:1},{r:7,c:2},{r:7,c:3},{r:7,c:4},{r:7,c:5},{r:7,c:6}],
+  green:  [{r:1,c:7},{r:2,c:7},{r:3,c:7},{r:4,c:7},{r:5,c:7},{r:6,c:7}],
+  yellow: [{r:7,c:13},{r:7,c:12},{r:7,c:11},{r:7,c:10},{r:7,c:9},{r:7,c:8}],
+  blue:   [{r:13,c:7},{r:12,c:7},{r:11,c:7},{r:10,c:7},{r:9,c:7},{r:8,c:7}],
+};
+
+const YARD_POSITIONS = {
+  red:    [{r:2,c:2},{r:2,c:4},{r:4,c:2},{r:4,c:4}],
+  green:  [{r:2,c:10},{r:2,c:12},{r:4,c:10},{r:4,c:12}],
+  yellow: [{r:10,c:10},{r:10,c:12},{r:12,c:10},{r:12,c:12}],
+  blue:   [{r:10,c:2},{r:10,c:4},{r:12,c:2},{r:12,c:4}],
 };
 
 const getGlobalIndex = (seatIndex, steps) => {
-  if (steps < 0 || steps > 51) return null;
+  if (steps < 0 || steps > 56) return null;
+  if (steps >= 52) return null;
   return (START_OFFSETS[seatIndex] + steps) % 52;
 };
+
+const getTokenGridPos = (color, seatIndex, steps, tokenIndex) => {
+  if (steps === 57) return { r: 7, c: 7 };
+  if (steps >= 52) {
+    const homeIdx = steps - 52;
+    const lane = HOME_LANES[color];
+    if (homeIdx < lane.length) return lane[homeIdx];
+    return { r: 7, c: 7 };
+  }
+  if (steps >= 0) {
+    const globalIdx = getGlobalIndex(seatIndex, steps);
+    if (globalIdx !== null && MAIN_TRACK[globalIdx]) return MAIN_TRACK[globalIdx];
+  }
+  const yard = YARD_POSITIONS[color];
+  return yard[tokenIndex] || yard[0];
+};
+
+const defaultState = {
+  phase: 'LOBBY', seats: [], tokens: {}, turn: 0,
+  dice: null, awaitingMove: false, availableMoves: [],
+  winner: null, lastRoll: null, rolling: false, captured: null, logs: []
+};
+
+function DiceFace({ value }) {
+  const positions = {
+    1: ['center'],
+    2: ['top-right', 'bottom-left'],
+    3: ['top-right', 'center', 'bottom-left'],
+    4: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+    5: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
+    6: ['top-left', 'top-right', 'mid-left', 'mid-right', 'bottom-left', 'bottom-right'],
+  };
+  return (
+    <div className="ludo-dice-face">
+      {(positions[value] || positions[1]).map((pos, i) => (
+        <span key={i} className={`ludo-dice-pip ${pos}`} />
+      ))}
+    </div>
+  );
+}
+
+function Confetti() {
+  const pieces = useMemo(() =>
+    Array.from({ length: 50 }, (_, i) => ({
+      id: i, left: Math.random() * 100, delay: Math.random() * 2,
+      duration: 2 + Math.random() * 2,
+      color: ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db', '#9b59b6', '#e67e22'][Math.floor(Math.random() * 6)],
+      size: 6 + Math.random() * 8, rotation: Math.random() * 360,
+    })), []);
+  return (
+    <div className="ludo-confetti">
+      {pieces.map(p => (
+        <div key={p.id} className="confetti-piece" style={{
+          left: `${p.left}%`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s`,
+          backgroundColor: p.color, width: p.size, height: p.size * 0.6, transform: `rotate(${p.rotation}deg)`,
+        }} />
+      ))}
+    </div>
+  );
+}
 
 export default function Ludo() {
   const multiplayerData = useMultiplayer('ludo-royale');
   const { status, isOnline, localPlayerId, networkState, broadcastState, disconnect } = multiplayerData;
-
-  const trackPositions = useMemo(() => {
-    const radius = 42;
-    return Array.from({ length: 52 }, (_, i) => {
-      const angle = (Math.PI * 2 * i) / 52 - Math.PI / 2;
-      return {
-        x: 50 + radius * Math.cos(angle),
-        y: 50 + radius * Math.sin(angle)
-      };
-    });
-  }, []);
-
-  const homePaths = useMemo(() => {
-    return START_OFFSETS.map((offset) => {
-      const angle = (Math.PI * 2 * offset) / 52 - Math.PI / 2;
-      return Array.from({ length: 6 }, (_, step) => {
-        const radius = 32 - step * 5.2;
-        return {
-          x: 50 + radius * Math.cos(angle),
-          y: 50 + radius * Math.sin(angle)
-        };
-      });
-    });
-  }, []);
-
   const [gameState, setGameState] = useState(defaultState);
+  const [captureEffect, setCaptureEffect] = useState(null);
+  const [diceRolling, setDiceRolling] = useState(false);
+  const rollTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (isOnline && networkState && networkState.phase) {
-      setGameState(networkState);
-    }
+    if (isOnline && networkState && networkState.phase) setGameState(networkState);
   }, [isOnline, networkState]);
 
-  const applyAndSync = (updater) => {
+  const applyAndSync = useCallback((updater) => {
     setGameState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (isOnline && status === 'connected') {
-        broadcastState(next);
-      }
+      if (isOnline && status === 'connected') broadcastState(next);
       return next;
     });
-  };
+  }, [isOnline, status, broadcastState]);
 
-  const handleStartGame = (playerCount, activePlayers) => {
-    const seats = activePlayers
-      .slice(0, MAX_PLAYERS)
-      .map((p, idx) => ({ ...p, seat: idx, color: LUDO_COLORS[idx % LUDO_COLORS.length] }));
-
+  const handleStartGame = useCallback((playerCount, activePlayers) => {
+    const seats = activePlayers.slice(0, MAX_PLAYERS).map((p, idx) => ({
+      ...p, seat: idx, color: COLORS[idx % COLORS.length],
+      name: p.name || `Player ${idx + 1}`
+    }));
     const tokens = {};
-    seats.forEach((seat) => {
-      tokens[seat.id] = [-1, -1, -1, -1];
+    seats.forEach((seat) => { tokens[seat.id] = [-1, -1, -1, -1]; });
+    applyAndSync({ ...defaultState, phase: 'PLAY', seats, tokens,
+      logs: [{ text: `🎲 Game started! ${COLOR_NAMES[seats[0].color]} goes first.`, ts: Date.now() }]
     });
-
-    const next = {
-      ...defaultState,
-      phase: 'PLAY',
-      seats,
-      tokens,
-      logs: [{ text: 'Game started', ts: Date.now() }]
-    };
-    applyAndSync(next);
-  };
-
-  const getTokenPosition = (seatIndex, steps, tokenIndex) => {
-    if (steps === 57) return { x: 50, y: 50 };
-    if (steps >= 52) return homePaths[seatIndex][steps - 52];
-    if (steps >= 0) return trackPositions[getGlobalIndex(seatIndex, steps)];
-
-    const base = BASE_POSITIONS[seatIndex];
-    const offset = TOKEN_OFFSETS[tokenIndex];
-    return { x: base.x + offset.x, y: base.y + offset.y };
-  };
+  }, [applyAndSync]);
 
   const currentSeat = gameState.seats[gameState.turn];
   const isMyTurn = !isOnline || currentSeat?.id === localPlayerId;
-  const mySeatIndex = gameState.seats.findIndex((s) => s.id === localPlayerId);
 
-  const getValidTokens = (seatIndex, roll, state) => {
+  const getValidTokens = useCallback((seatIndex, roll, state) => {
     const player = state.seats[seatIndex];
     if (!player) return [];
     const tokenSteps = state.tokens[player.id] || [];
     const valid = [];
-
     tokenSteps.forEach((steps, idx) => {
       if (steps === -1) {
         if (roll === 6) valid.push(idx);
       } else if (steps >= 0 && steps < 57) {
-        const target = steps + roll;
-        if (target <= 57) valid.push(idx);
+        if (steps + roll <= 57) valid.push(idx);
       }
     });
-
     return valid;
-  };
+  }, []);
 
-  const advanceTurn = (state, extraTurn) => {
-    if (extraTurn) return state.turn;
-    return (state.turn + 1) % state.seats.length;
-  };
+  const advanceTurn = (state, extra) => extra ? state.turn : (state.turn + 1) % state.seats.length;
 
-  const rollDice = () => {
-    if (gameState.phase !== 'PLAY' || !currentSeat) return;
-    if (!isMyTurn || gameState.awaitingMove) return;
-
+  const rollDice = useCallback(() => {
+    if (gameState.phase !== 'PLAY' || !currentSeat || !isMyTurn || gameState.awaitingMove || diceRolling) return;
+    setDiceRolling(true);
     const roll = Math.floor(Math.random() * 6) + 1;
-    const validMoves = getValidTokens(gameState.turn, roll, gameState);
 
-    const noMoves = validMoves.length === 0;
-    const ts = Date.now();
-    const logEntry = {
-      text: `${currentSeat.name || 'Player'} rolled ${roll}${noMoves ? ' (no moves)' : ''}`,
-      ts
-    };
+    rollTimeoutRef.current = setTimeout(() => {
+      setDiceRolling(false);
+      const validMoves = getValidTokens(gameState.turn, roll, gameState);
+      const noMoves = validMoves.length === 0;
+      const ts = Date.now();
+      const emoji = roll === 6 ? '🎯' : '🎲';
+      const logText = `${emoji} ${currentSeat.name} rolled ${roll}${noMoves ? ' — no moves' : ''}${roll === 6 ? ' — Extra turn!' : ''}`;
 
-    applyAndSync((prev) => {
-      const nextLogs = [...prev.logs, logEntry].slice(-6);
       if (noMoves) {
-        return {
-          ...prev,
-          dice: null,
-          awaitingMove: false,
-          availableMoves: [],
+        applyAndSync((prev) => ({
+          ...prev, dice: roll, awaitingMove: false, availableMoves: [],
           turn: advanceTurn(prev, false),
-          lastRoll: { roll, by: currentSeat?.id, ts },
-          logs: nextLogs
-        };
+          lastRoll: { roll, by: currentSeat.id, ts },
+          logs: [...prev.logs, { text: logText, ts }].slice(-8)
+        }));
+      } else if (validMoves.length === 1) {
+        // Auto-select single valid token
+        applyAndSync((prev) => ({
+          ...prev, dice: roll, awaitingMove: true, availableMoves: validMoves,
+          lastRoll: { roll, by: currentSeat.id, ts },
+          logs: [...prev.logs, { text: logText, ts }].slice(-8)
+        }));
+        // Auto-move after brief delay
+        setTimeout(() => handleMove(validMoves[0]), 400);
+      } else {
+        applyAndSync((prev) => ({
+          ...prev, dice: roll, awaitingMove: true, availableMoves: validMoves,
+          lastRoll: { roll, by: currentSeat.id, ts },
+          logs: [...prev.logs, { text: logText, ts }].slice(-8)
+        }));
       }
+    }, 700);
+  }, [gameState, currentSeat, isMyTurn, diceRolling, applyAndSync, getValidTokens]);
 
-      return {
-        ...prev,
-        dice: roll,
-        awaitingMove: true,
-        availableMoves: validMoves,
-        lastRoll: { roll, by: currentSeat?.id, ts },
-        logs: nextLogs
-      };
-    });
-  };
+  useEffect(() => { return () => { if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current); }; }, []);
 
-  const handleMove = (tokenIndex) => {
+  const handleMove = useCallback((tokenIndex) => {
     if (!currentSeat || !isMyTurn) return;
-    if (!gameState.awaitingMove || !gameState.availableMoves.includes(tokenIndex)) return;
-    const roll = gameState.dice;
 
-    applyAndSync((prev) => {
+    setGameState(prev => {
+      if (!prev.awaitingMove || !prev.availableMoves.includes(tokenIndex)) return prev;
+      const roll = prev.dice;
       const tokens = { ...prev.tokens };
       const playerTokens = [...tokens[currentSeat.id]];
       const currentSteps = playerTokens[tokenIndex];
       const nextSteps = currentSteps === -1 ? 0 : currentSteps + roll;
-
       playerTokens[tokenIndex] = nextSteps;
       tokens[currentSeat.id] = playerTokens;
 
+      let capturedInfo = null;
       const targetGlobal = getGlobalIndex(prev.turn, nextSteps);
-      if (targetGlobal !== null && !SAFE_SPOTS.includes(targetGlobal)) {
+      if (targetGlobal !== null && !SAFE_SPOTS.includes(targetGlobal) && nextSteps < 52) {
         prev.seats.forEach((seat, sIdx) => {
           if (seat.id === currentSeat.id) return;
           const oppTokens = tokens[seat.id] ? [...tokens[seat.id]] : [];
           oppTokens.forEach((steps, idx) => {
             if (steps >= 0 && steps <= 51) {
-              const oppGlobal = getGlobalIndex(sIdx, steps);
-              if (oppGlobal === targetGlobal) {
+              if (getGlobalIndex(sIdx, steps) === targetGlobal) {
                 oppTokens[idx] = -1;
+                capturedInfo = { color: seat.color, tokenIdx: idx };
               }
             }
           });
@@ -211,181 +230,245 @@ export default function Ludo() {
         });
       }
 
-      const finished = tokens[currentSeat.id].every((s) => s >= 57);
-      const extraTurn = roll === 6 && !finished;
-
-      const nextState = {
-        ...prev,
-        tokens,
-        dice: null,
-        awaitingMove: false,
-        availableMoves: [],
-        turn: finished ? prev.turn : advanceTurn(prev, extraTurn),
-        winner: finished ? currentSeat.id : prev.winner,
-        phase: finished ? 'FINISHED' : prev.phase,
-        logs: [...prev.logs, { text: `${currentSeat.name || 'Player'} moved token ${tokenIndex + 1}`, ts: Date.now() }].slice(-6)
-      };
-
-      if (finished) {
-        nextState.logs.push({ text: `${currentSeat.name || 'Player'} wins the match!`, ts: Date.now() });
+      if (capturedInfo) {
+        const capturedPos = getTokenGridPos(currentSeat.color, prev.turn, nextSteps, tokenIndex);
+        setCaptureEffect({ r: capturedPos.r, c: capturedPos.c, ts: Date.now() });
+        setTimeout(() => setCaptureEffect(null), 800);
       }
 
-      return nextState;
-    });
-  };
+      const finished = tokens[currentSeat.id].every((s) => s >= 57);
+      const extraTurn = roll === 6 && !finished;
+      const wasCaptured = capturedInfo !== null;
+      let logText = `${currentSeat.name} moved token ${tokenIndex + 1}`;
+      if (currentSteps === -1) logText = `${currentSeat.name} entered a token`;
+      if (wasCaptured) logText += ' 💥 captured!';
+      if (nextSteps === 57) logText += ' ✅ Home!';
+      const nextLogs = [...prev.logs, { text: logText, ts: Date.now() }];
+      if (finished) nextLogs.push({ text: `🏆 ${currentSeat.name} wins!`, ts: Date.now() + 1 });
 
-  const resetToLobby = () => {
-    applyAndSync(defaultState);
-  };
+      const next = {
+        ...prev, tokens, dice: null, awaitingMove: false, availableMoves: [],
+        turn: finished ? prev.turn : advanceTurn(prev, extraTurn || wasCaptured),
+        winner: finished ? currentSeat.id : prev.winner,
+        phase: finished ? 'FINISHED' : prev.phase,
+        logs: nextLogs.slice(-8)
+      };
+      if (isOnline && status === 'connected') broadcastState(next);
+      return next;
+    });
+  }, [currentSeat, isMyTurn, isOnline, status, broadcastState]);
+
+  const resetToLobby = () => applyAndSync(defaultState);
 
   if (gameState.phase === 'LOBBY' || status !== 'connected') {
     return (
       <div className="ludo-shell">
-        <MultiplayerLobby
-          gameTitle="LUDO ROYALE"
-          maxPlayers={MAX_PLAYERS}
-          onStartLocal={handleStartGame}
-          hookData={multiplayerData}
-        />
-        <div className="ludo-rules">
-          <h4>// LUDO BRIEFING</h4>
-          <ul>
-            <li>Roll a 6 to launch a pawn from your yard.</li>
-            <li>Run the full loop, then dash up your home lane to finish.</li>
-            <li>Land on rivals to send them home unless the tile is safe.</li>
-            <li>Roll a 6 for an extra turn. First player to finish all 4 wins.</li>
-          </ul>
+        <MultiplayerLobby gameTitle="LUDO ROYALE" maxPlayers={MAX_PLAYERS}
+          onStartLocal={handleStartGame} hookData={multiplayerData} />
+        <div className="ludo-rules-card">
+          <h4>📜 How to Play</h4>
+          <div className="rules-grid">
+            <div className="rule-item"><span className="rule-icon">🎲</span><p>Roll a <strong>6</strong> to enter a token.</p></div>
+            <div className="rule-item"><span className="rule-icon">🏃</span><p>Move tokens around the board to home.</p></div>
+            <div className="rule-item"><span className="rule-icon">💥</span><p>Land on opponents to send them back!</p></div>
+            <div className="rule-item"><span className="rule-icon">🏆</span><p>First to get all 4 tokens home wins!</p></div>
+          </div>
         </div>
       </div>
     );
   }
 
-  const currentPlayerName = currentSeat?.name || 'Player';
   const validForCurrent = gameState.awaitingMove ? gameState.availableMoves : [];
 
+  // Build grid cells
+  const gridCells = [];
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      let cellType = 'empty';
+      let cellColor = '';
+      let cellContent = null;
+      let isSafe = false;
+
+      const trackIdx = MAIN_TRACK.findIndex(t => t.r === r && t.c === c);
+      if (trackIdx !== -1) {
+        cellType = 'track';
+        if (SAFE_SPOTS.includes(trackIdx)) { isSafe = true; cellContent = '★'; }
+        if (trackIdx === 0) cellColor = 'red';
+        else if (trackIdx === 13) cellColor = 'green';
+        else if (trackIdx === 26) cellColor = 'yellow';
+        else if (trackIdx === 39) cellColor = 'blue';
+      }
+
+      for (const [color, lane] of Object.entries(HOME_LANES)) {
+        if (lane.findIndex(l => l.r === r && l.c === c) !== -1) {
+          cellType = 'home-lane'; cellColor = color;
+        }
+      }
+
+      if (r === 7 && c === 7) cellType = 'center';
+
+      const inRedYard = r <= 5 && c <= 5;
+      const inGreenYard = r <= 5 && c >= 9;
+      const inYellowYard = r >= 9 && c >= 9;
+      const inBlueYard = r >= 9 && c <= 5;
+
+      if (inRedYard && cellType === 'empty') cellType = 'yard-red';
+      if (inGreenYard && cellType === 'empty') cellType = 'yard-green';
+      if (inYellowYard && cellType === 'empty') cellType = 'yard-yellow';
+      if (inBlueYard && cellType === 'empty') cellType = 'yard-blue';
+
+      for (const [color, positions] of Object.entries(YARD_POSITIONS)) {
+        if (positions.findIndex(p => p.r === r && p.c === c) !== -1) {
+          cellType = `yard-slot-${color}`;
+        }
+      }
+
+      gridCells.push(
+        <div key={`${r}-${c}`}
+          className={`ludo-cell ${cellType} ${cellColor ? `color-${cellColor}` : ''} ${isSafe ? 'safe' : ''}`}>
+          {cellContent && <span className="cell-star">{cellContent}</span>}
+          {cellType === 'center' && <span className="center-home">🏠</span>}
+          {captureEffect && captureEffect.r === r && captureEffect.c === c && (
+            <div className="capture-burst" key={captureEffect.ts}>💥</div>
+          )}
+        </div>
+      );
+    }
+  }
+
+  // Build tokens
+  const tokenElements = [];
+  gameState.seats.forEach((seat, sIdx) => {
+    const playerTokens = gameState.tokens[seat.id] || [];
+    const posCount = {};
+    playerTokens.forEach((steps, tIdx) => {
+      const pos = getTokenGridPos(seat.color, sIdx, steps, tIdx);
+      const key = `${pos.r}-${pos.c}`;
+      if (!posCount[key]) posCount[key] = [];
+      posCount[key].push(tIdx);
+    });
+
+    playerTokens.forEach((steps, tIdx) => {
+      const pos = getTokenGridPos(seat.color, sIdx, steps, tIdx);
+      const key = `${pos.r}-${pos.c}`;
+      const stackGroup = posCount[key] || [];
+      const stackIdx = stackGroup.indexOf(tIdx);
+      const totalStack = stackGroup.length;
+      const isInteractive = sIdx === gameState.turn && isMyTurn && validForCurrent.includes(tIdx);
+      const isFinished = steps === 57;
+      const offsets = [{x:-30,y:-30},{x:30,y:-30},{x:-30,y:30},{x:30,y:30}];
+      const stackOffset = totalStack > 1 ? offsets[stackIdx % 4] : { x: 0, y: 0 };
+
+      tokenElements.push(
+        <div key={`${seat.id}-${tIdx}`}
+          className={`ludo-token ${isInteractive ? 'selectable' : ''} ${isFinished ? 'finished' : ''} color-${seat.color}`}
+          style={{
+            gridRow: pos.r + 1, gridColumn: pos.c + 1,
+            transform: `translate(${stackOffset.x}%, ${stackOffset.y}%)`,
+            zIndex: isInteractive ? 20 : 10,
+          }}
+          onClick={() => isInteractive && handleMove(tIdx)}
+          title={`${COLOR_NAMES[seat.color]} Token ${tIdx + 1}`}
+        >
+          <span className="token-num">{tIdx + 1}</span>
+          {isInteractive && <span className="token-ring" />}
+        </div>
+      );
+    });
+  });
+
+  const winnerSeat = gameState.seats.find(s => s.id === gameState.winner);
+
   return (
-    <div className="ludo-shell">
-      <div className="ludo-hud">
-        <div className="turn-pill" style={{ borderColor: currentSeat?.color }}>
-          <span className="dot" style={{ background: currentSeat?.color, color: currentSeat?.color || '#fff' }} />
-          {gameState.phase === 'FINISHED'
-            ? `${currentSeat?.id === gameState.winner ? 'Winner' : 'Game Over'}`
-            : `Turn: ${currentPlayerName}`}
+    <div className="ludo-shell playing">
+      {gameState.phase === 'FINISHED' && <Confetti />}
+      {gameState.phase === 'FINISHED' && winnerSeat && (
+        <div className="ludo-winner-overlay">
+          <div className="winner-card">
+            <div className="winner-crown">👑</div>
+            <h2 style={{ color: COLOR_HEX[winnerSeat.color] }}>{winnerSeat.name} Wins!</h2>
+            <p>Congratulations!</p>
+            <button className="ludo-btn primary" onClick={resetToLobby}>Play Again</button>
+          </div>
         </div>
-        <div className="dice-card">
-          <div 
-            key={gameState.lastRoll?.ts || 'init'} 
-            className={`dice-wrapper ${gameState.lastRoll ? 'rolling' : ''}`}
-          >
-            <div className={`dice-value face-${gameState.lastRoll?.roll || 0}`}>
-              {gameState.lastRoll?.roll ? (
-                Array.from({ length: gameState.lastRoll.roll }).map((_, i) => (
-                  <span key={i} className="dice-dot" />
-                ))
-              ) : (
-                <span className="dice-text">?</span>
-              )}
+      )}
+
+      <div className="ludo-layout">
+        {/* LEFT: Controls + Players */}
+        <div className="ludo-panel">
+          {/* Dice section inline */}
+          <div className="dice-section">
+            <div className="turn-label" style={{ color: currentSeat ? COLOR_HEX[currentSeat.color] : '#fff' }}>
+              {gameState.phase === 'FINISHED' ? '🎉 Game Over' : `${currentSeat?.name}'s Turn`}
+            </div>
+            <div className="dice-row">
+              <div className={`dice-container ${diceRolling ? 'rolling' : ''} ${isMyTurn && !gameState.awaitingMove && gameState.phase === 'PLAY' && !diceRolling ? 'clickable' : ''}`}
+                onClick={rollDice}>
+                <div className="dice-cube" key={gameState.lastRoll?.ts || 'init'}>
+                  <DiceFace value={gameState.lastRoll?.roll || 1} />
+                </div>
+              </div>
+              <div className="dice-actions">
+                <button className="ludo-btn primary roll-btn"
+                  onClick={rollDice}
+                  disabled={!isMyTurn || gameState.phase === 'FINISHED' || gameState.awaitingMove || diceRolling}
+                  style={{ '--btn-color': currentSeat ? COLOR_HEX[currentSeat.color] : '#3498db' }}>
+                  {diceRolling ? '🎲 Rolling...' : isMyTurn ? (gameState.awaitingMove ? '👆 Select Token' : '🎲 Roll Dice') : '⏳ Waiting...'}
+                </button>
+                {gameState.lastRoll?.roll === 6 && !diceRolling && <div className="six-badge">SIX! 🎯</div>}
+                {gameState.awaitingMove && isMyTurn && <div className="move-hint">Tap a glowing token</div>}
+              </div>
             </div>
           </div>
-          <button
-            className="primary-btn"
-            onClick={rollDice}
-            disabled={!isMyTurn || gameState.phase === 'FINISHED'}
-          >
-            {isMyTurn ? 'Roll Dice' : 'Waiting'}
-          </button>
-        </div>
-        <div className="actions">
-          <button className="ghost-btn" onClick={resetToLobby}>Reset</button>
-          <button className="ghost-btn danger" onClick={disconnect}>Leave</button>
-        </div>
-      </div>
 
-      <div className="player-strip">
-        {gameState.seats.map((seat, idx) => {
-          const finished = gameState.tokens[seat.id]?.filter((s) => s === 57).length || 0;
-          return (
-            <div key={seat.id} className={`player-card ${idx === gameState.turn ? 'active' : ''}`} style={{ '--pc-color': seat.color }}>
-              <div className="pc-header">
-                <span className="pc-dot" style={{ background: seat.color, color: seat.color }} />
-                <div className="pc-name">Player {idx + 1}</div>
-              </div>
-              <div className="pc-meta">Finished: {finished}/4</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="ludo-board">
-        <div className="board-bg" />
-        <div className="corner-yard yard-red" aria-hidden>
-          <div className="yard-center">Home</div>
-        </div>
-        <div className="corner-yard yard-green" aria-hidden>
-          <div className="yard-center">Home</div>
-        </div>
-        <div className="corner-yard yard-yellow" aria-hidden>
-          <div className="yard-center">Home</div>
-        </div>
-        <div className="corner-yard yard-blue" aria-hidden>
-          <div className="yard-center">Home</div>
-        </div>
-
-        <div className="lane lane-red" aria-hidden />
-        <div className="lane lane-green" aria-hidden />
-        <div className="lane lane-yellow" aria-hidden />
-        <div className="lane lane-blue" aria-hidden />
-        {trackPositions.map((pos, idx) => (
-          <div
-            key={`cell-${idx}`}
-            className={`track-cell ${SAFE_SPOTS.includes(idx) ? 'safe' : ''}`}
-            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-          >
-            <span className="cell-mark" />
+          {/* Players */}
+          <div className="player-list">
+            {gameState.seats.map((seat, idx) => {
+              const tokensHome = (gameState.tokens[seat.id] || []).filter(s => s === 57).length;
+              const isActive = idx === gameState.turn && gameState.phase !== 'FINISHED';
+              return (
+                <div key={seat.id} className={`ludo-player-card ${isActive ? 'active' : ''}`}
+                  style={{ '--player-color': COLOR_HEX[seat.color] }}>
+                  <div className="player-avatar" style={{ background: COLOR_HEX[seat.color] }}>
+                    {seat.name?.[0]?.toUpperCase() || (idx + 1)}
+                  </div>
+                  <div className="player-info">
+                    <span className="player-name">{seat.name}</span>
+                    <div className="token-progress">
+                      {[0, 1, 2, 3].map(t => (
+                        <span key={t} className={`progress-dot ${(gameState.tokens[seat.id]?.[t] ?? -1) === 57 ? 'home' : (gameState.tokens[seat.id]?.[t] ?? -1) >= 0 ? 'active' : ''}`}
+                          style={{ background: (gameState.tokens[seat.id]?.[t] ?? -1) === 57 ? COLOR_HEX[seat.color] : undefined }} />
+                      ))}
+                    </div>
+                  </div>
+                  {isActive && <span className="turn-indicator">◀</span>}
+                </div>
+              );
+            })}
           </div>
-        ))}
 
-        {homePaths.map((path, pi) => (
-          <React.Fragment key={`home-${pi}`}>
-            {path.map((pos, step) => (
-              <div
-                key={`home-${pi}-${step}`}
-                className="home-cell"
-                style={{ left: `${pos.x}%`, top: `${pos.y}%`, borderColor: LUDO_COLORS[pi] }}
-              />
-            ))}
-          </React.Fragment>
-        ))}
+          {/* Game Log */}
+          <div className="ludo-log-panel">
+            <h4 className="log-heading">Game Log</h4>
+            <div className="log-entries">
+              {gameState.logs.map((log, i) => (
+                <div key={log.ts + i} className={`log-entry ${i === gameState.logs.length - 1 ? 'latest' : ''}`}>{log.text}</div>
+              ))}
+            </div>
+          </div>
 
-        <div className="center-star">*</div>
-
-        {gameState.seats.map((seat, sIdx) => (
-          (gameState.tokens[seat.id] || []).map((steps, tIdx) => {
-            const pos = getTokenPosition(sIdx, steps, tIdx);
-            const isInteractive = isMyTurn && validForCurrent.includes(tIdx);
-            return (
-              <div
-                key={`${seat.id}-${tIdx}`}
-                className={`token ${isInteractive ? 'clickable' : ''}`}
-                style={{ left: `${pos.x}%`, top: `${pos.y}%`, background: seat.color }}
-                onClick={() => handleMove(tIdx)}
-              >
-                <span className="token-label">{tIdx + 1}</span>
-              </div>
-            );
-          })
-        ))}
-      </div>
-
-      <div className="ludo-footer">
-        <div className="legend">
-          <span className="legend-dot" style={{ background: currentSeat?.color, color: currentSeat?.color || '#fff' }} /> You are Player {mySeatIndex + 1}
-          {gameState.awaitingMove && <span className="legend-msg">Select a highlighted pawn</span>}
+          <div className="control-actions">
+            <button className="ludo-btn ghost" onClick={resetToLobby}>🔄 Reset</button>
+            <button className="ludo-btn ghost danger" onClick={disconnect}>🚪 Leave</button>
+          </div>
         </div>
-        <div className="logs">
-          {gameState.logs.map((log, i) => (
-            <div key={log.ts + i} className="log-line">{log.text}</div>
-          ))}
+
+        {/* RIGHT: Board */}
+        <div className="ludo-board-wrapper">
+          <div className="ludo-board">
+            {gridCells}
+            {tokenElements}
+          </div>
         </div>
       </div>
     </div>

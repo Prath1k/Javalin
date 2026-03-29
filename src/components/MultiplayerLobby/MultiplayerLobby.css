@@ -210,3 +210,109 @@
   font-style: italic;
   padding: 12px;
 }
+
+/* ========== MOBILE RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .lobby-container {
+    height: auto;
+    min-height: 100%;
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+
+  .lobby-card {
+    padding: 24px 18px;
+    max-width: 100%;
+    border-radius: 14px;
+  }
+
+  .lobby-card h1 {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 0.82rem;
+    margin-bottom: 20px;
+  }
+
+  .mode-section {
+    padding: 16px;
+  }
+
+  .mode-section h3 {
+    font-size: 0.95rem;
+  }
+
+  .mode-section p {
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+  }
+
+  .local-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .local-controls input {
+    width: 50px;
+    padding: 10px;
+    font-size: 1rem;
+  }
+
+  .action-btn {
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    min-height: 44px;
+  }
+
+  .join-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .join-controls input {
+    font-size: 1rem;
+    padding: 12px;
+  }
+
+  .highlight-code {
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    padding: 6px 12px;
+  }
+
+  .player-list {
+    margin: 20px 0;
+    padding: 14px;
+  }
+
+  .player-list li {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .lobby-card {
+    padding: 18px 14px;
+  }
+
+  .lobby-card h1 {
+    font-size: 1.3rem;
+  }
+
+  .mode-section {
+    padding: 12px;
+  }
+
+  .action-btn {
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    width: 100%;
+  }
+
+  .local-controls {
+    justify-content: center;
+  }
+}
