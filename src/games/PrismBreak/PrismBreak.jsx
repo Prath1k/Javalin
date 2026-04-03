@@ -57,6 +57,7 @@ const LEVELS = [
 export default function PrismBreak() {
   const { highScores, updateHighScore } = useScores();
   const highScore = highScores['prism-break'] || 0;
+  const [selectedLevel, setSelectedLevel] = useState(1);
   
   const canvasRef = useRef(null);
   const [uiState, setUiState] = useState({ score: 0, level: 1, over: false, won: false });
@@ -113,12 +114,12 @@ export default function PrismBreak() {
   const startGame = () => {
     const s = stateRef.current;
     s.score = 0;
-    s.level = 1;
-    s.bricks = initBricks(1);
+    s.level = selectedLevel;
+    s.bricks = initBricks(selectedLevel);
     s.ball = { x: 400, y: 530, vx: 5, vy: -5, radius: 8, speed: 7, trail: [] };
     s.paddle = { x: 340, y: 550, width: 120, height: 15, speed: 12 };
     s.inPlay = false;
-    setUiState({ score: 0, level: 1, over: false, won: false });
+    setUiState({ score: 0, level: selectedLevel, over: false, won: false });
     setShowTutorial(false);
   };
 
@@ -372,6 +373,28 @@ export default function PrismBreak() {
           <h1>PRISM BREAK</h1>
           <div className="tutorial-card">
             <p>Shatter the spectral prism fields. Navigate through 5 unique quantum layouts.</p>
+            <div style={{ margin: '18px 0 20px', textAlign: 'left' }}>
+              <label style={{ display: 'block', marginBottom: 8, color: '#fff', letterSpacing: 1 }}>
+                START LEVEL
+              </label>
+              <select
+                value={selectedLevel}
+                onChange={(e) => setSelectedLevel(Number(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#fff',
+                  fontFamily: 'inherit'
+                }}
+              >
+                {Array.from({ length: LEVELS.length }, (_, i) => i + 1).map((lvl) => (
+                  <option key={lvl} value={lvl}>Level {lvl}</option>
+                ))}
+              </select>
+            </div>
             <ul>
               <li><Icon name="swap_horiz" /> <strong>MOVE:</strong> Arrow Keys / AD</li>
               <li><Icon name="rocket_launch" /> <strong>LAUNCH:</strong> Space Bar</li>

@@ -18,6 +18,7 @@ const MATRIX_CHARS = 'アイウエオカキクケコサシスセソタチツテ�
 
 const TerminalHacker = () => {
   const { updateHighScore } = useScores();
+  const [selectedLevel, setSelectedLevel] = useState(1);
   
   const [gameState, setGameState] = useState('start');
   const [score, setScore] = useState(0);
@@ -63,7 +64,7 @@ const TerminalHacker = () => {
     setLives(5);
     setWords([]);
     setInputValue('');
-    setLevel(1);
+    setLevel(selectedLevel);
     setWordsTyped(0);
     setShatterWord(null);
     wordsRef.current = [];
@@ -233,6 +234,29 @@ const TerminalHacker = () => {
             Type the descending code blocks to intercept them before they reach the system core.<br/>
             You have 5 system integrity blocks.
           </p>
+          <div style={{ marginBottom: 20, textAlign: 'left', width: '100%', maxWidth: 360 }}>
+            <label style={{ display: 'block', marginBottom: 8, color: '#00ff41', letterSpacing: 1 }}>
+              START LEVEL
+            </label>
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(Number(e.target.value))}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 6,
+                border: '1px solid rgba(0, 255, 65, 0.4)',
+                background: 'rgba(0, 0, 0, 0.65)',
+                color: '#00ff41',
+                fontFamily: 'inherit',
+                fontSize: '1rem'
+              }}
+            >
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((lvl) => (
+                <option key={lvl} value={lvl}>0x{lvl.toString(16).toUpperCase()}</option>
+              ))}
+            </select>
+          </div>
           <button className="hack-btn" onClick={startGame}>[ EXECUTE ]</button>
         </div>
       )}

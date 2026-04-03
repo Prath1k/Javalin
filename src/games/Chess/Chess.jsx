@@ -5,71 +5,206 @@ import { Piece } from './Pieces';
 import { supabase } from '../../supabaseClient';
 import './Chess.css';
 
+const TIME_CONTROL_OPTIONS = [
+  { value: 'off', label: 'No Clock', seconds: 0 },
+  { value: '1', label: '1 Minute', seconds: 60 },
+  { value: '3', label: '3 Minutes', seconds: 180 },
+  { value: '5', label: '5 Minutes', seconds: 300 },
+  { value: '10', label: '10 Minutes', seconds: 600 },
+  { value: '15', label: '15 Minutes', seconds: 900 },
+];
+
+const getInitialClockSeconds = (value) => {
+  const option = TIME_CONTROL_OPTIONS.find((item) => item.value === value);
+  return option ? option.seconds : 0;
+};
+
+const formatClock = (seconds) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+};
+
 const ChessGame = () => {
   const [chess] = useState(() => new Chess());
   const [board, setBoard] = useState(chess.board());
   const [status, setStatus] = useState('White to move');
   const [gameOver, setGameOver] = useState(false);
-  
-  // Game states
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [validMoves, setValidMoves] = useState([]);
-  const [mode, setMode] = useState('pvp'); // 'pvp', 'pve', 'online'
-  const [aiColor, setAiColor] = useState('b'); // AI plays black by default
+  const [mode, setMode] = useState('pvp');
+  const [aiColor, setAiColor] = useState('b');
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [timeControl, setTimeControl] = useState('off');
+  const [whiteTime, setWhiteTime] = useState(getInitialClockSeconds('off'));
+  const [blackTime, setBlackTime] = useState(getInitialClockSeconds('off'));
 
-  // Online Multiplayer states
   const [roomPin, setRoomPin] = useState('');
   const [inputPin, setInputPin] = useState('');
   const [playerColor, setPlayerColor] = useState('w');
-  const [onlineStatus, setOnlineStatus] = useState('disconnected'); // disconnected, waiting, connected
-  const channelRef = useRef(null);
+  const [onlineStatus, setOnlineStatus] = useState('disconnected');
 
+  const channelRef = useRef(null);
+  const undoStackRef = useRef([]);
+  const redoStackRef = useRef([]);
+  const aiTimeoutRef = useRef(null);
   const containerRef = useRef(null);
+
+  const clearAiTimeout = useCallback(() => {
+    if (aiTimeoutRef.current) {
+      window.clearTimeout(aiTimeoutRef.current);
+      aiTimeoutRef.current = null;
+    }
+    setIsAiThinking(false);
+  }, []);
 
   const updateGameStatus = useCallback(() => {
     setBoard(chess.board());
-    
+
     if (chess.isCheckmate()) {
       setStatus(`Checkmate! ${chess.turn() === 'w' ? 'Black' : 'White'} wins.`);
       setGameOver(true);
-    } else if (chess.isDraw()) {
+      return;
+    }
+
+    if (chess.isDraw()) {
       setStatus('Game Over - Draw');
       setGameOver(true);
-    } else if (chess.isStalemate()) {
+      return;
+    }
+
+    if (chess.isStalemate()) {
       setStatus('Game Over - Stalemate');
       setGameOver(true);
-    } else {
-      let currentStatus = `${chess.turn() === 'w' ? 'White' : 'Black'} to move`;
-      if (chess.isCheck()) {
-        currentStatus = `Check! ${currentStatus}`;
-      }
-      setStatus(currentStatus);
-      setGameOver(false);
+      return;
     }
+
+    let currentStatus = `${chess.turn() === 'w' ? 'White' : 'Black'} to move`;
+    if (chess.isCheck()) {
+      currentStatus = `Check! ${currentStatus}`;
+    }
+    setStatus(currentStatus);
+    setGameOver(false);
   }, [chess]);
 
-  // AI Move triggered when AI's turn
-  useEffect(() => {
-    if (mode === 'pve' && !gameOver && chess.turn() === aiColor && !isAiThinking) {
-      setIsAiThinking(true);
-      // Small timeout to allow UI update
-      setTimeout(() => {
-        const bestMove = getBestMove(chess, 3);
-        if (bestMove) {
-          chess.move(bestMove);
-        }
-        updateGameStatus();
-        setIsAiThinking(false);
-      }, 50);
-    }
-  }, [chess.turn(), mode, gameOver, isAiThinking, aiColor, updateGameStatus]);
+  const pushHistorySnapshot = useCallback(() => {
+    undoStackRef.current.push({
+      fen: chess.fen(),
+      whiteTime,
+      blackTime,
+    });
+    redoStackRef.current = [];
+  }, [blackTime, chess, whiteTime]);
 
-  // Subscriptions cleanup
+  const loadSnapshot = useCallback((snapshot) => {
+    chess.load(snapshot.fen);
+    setWhiteTime(snapshot.whiteTime);
+    setBlackTime(snapshot.blackTime);
+    setSelectedSquare(null);
+    setValidMoves([]);
+    clearAiTimeout();
+    updateGameStatus();
+  }, [chess, clearAiTimeout, updateGameStatus]);
+
+  const applyMove = useCallback((moveObj, { recordHistory = true, broadcast = false } = {}) => {
+    if (recordHistory) {
+      pushHistorySnapshot();
+    }
+
+    const move = chess.move(moveObj);
+    if (!move) {
+      if (recordHistory) {
+        undoStackRef.current.pop();
+      }
+      return false;
+    }
+
+    setSelectedSquare(null);
+    setValidMoves([]);
+    updateGameStatus();
+
+    if (broadcast && mode === 'online' && channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'move',
+        payload: { moveObj },
+      });
+    }
+
+    return true;
+  }, [chess, mode, pushHistorySnapshot, updateGameStatus]);
+
+  const endGameOnTime = useCallback((color) => {
+    clearAiTimeout();
+    setSelectedSquare(null);
+    setValidMoves([]);
+    setGameOver(true);
+    setStatus(`${color === 'w' ? 'White' : 'Black'} ran out of time. ${color === 'w' ? 'Black' : 'White'} wins.`);
+  }, [clearAiTimeout]);
+
+  useEffect(() => {
+    if (timeControl === 'off' || mode === 'online' || gameOver) {
+      return undefined;
+    }
+
+    const activeColor = chess.turn();
+
+    const timerId = window.setInterval(() => {
+      if (activeColor === 'w') {
+        setWhiteTime((current) => {
+          if (current <= 1) {
+            window.clearInterval(timerId);
+            endGameOnTime('w');
+            return 0;
+          }
+          return current - 1;
+        });
+      } else {
+        setBlackTime((current) => {
+          if (current <= 1) {
+            window.clearInterval(timerId);
+            endGameOnTime('b');
+            return 0;
+          }
+          return current - 1;
+        });
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [chess, endGameOnTime, gameOver, mode, timeControl, board]);
+
+  useEffect(() => {
+    if (mode !== 'pve' || gameOver || isAiThinking || chess.turn() !== aiColor) {
+      return undefined;
+    }
+
+    setIsAiThinking(true);
+    aiTimeoutRef.current = window.setTimeout(() => {
+      const bestMove = getBestMove(chess, 3);
+      if (bestMove) {
+        applyMove(bestMove);
+      }
+      setIsAiThinking(false);
+      aiTimeoutRef.current = null;
+    }, 50);
+
+    return () => {
+      if (aiTimeoutRef.current) {
+        window.clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
+    };
+  }, [aiColor, applyMove, chess, gameOver, isAiThinking, mode, board]);
+
   useEffect(() => {
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+      }
+      if (aiTimeoutRef.current) {
+        window.clearTimeout(aiTimeoutRef.current);
       }
     };
   }, []);
@@ -83,6 +218,65 @@ const ChessGame = () => {
     setRoomPin('');
   };
 
+  const resetGame = useCallback((nextTimeControl = timeControl) => {
+    chess.reset();
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    clearAiTimeout();
+    setSelectedSquare(null);
+    setValidMoves([]);
+    setTimeControl(nextTimeControl);
+    setWhiteTime(getInitialClockSeconds(nextTimeControl));
+    setBlackTime(getInitialClockSeconds(nextTimeControl));
+    setStatus('White to move');
+    setGameOver(false);
+    setBoard(chess.board());
+  }, [chess, clearAiTimeout, timeControl]);
+
+  const undoMove = useCallback(() => {
+    if (mode === 'online' || undoStackRef.current.length === 0) {
+      return;
+    }
+
+    const currentSnapshot = {
+      fen: chess.fen(),
+      whiteTime,
+      blackTime,
+    };
+
+    const previousSnapshot = undoStackRef.current.pop();
+    redoStackRef.current.push(currentSnapshot);
+    loadSnapshot(previousSnapshot);
+
+    if (mode === 'pve' && chess.turn() === aiColor && undoStackRef.current.length > 0) {
+      const humanSnapshot = undoStackRef.current.pop();
+      redoStackRef.current.push(previousSnapshot);
+      loadSnapshot(humanSnapshot);
+    }
+  }, [aiColor, blackTime, chess, loadSnapshot, mode, whiteTime]);
+
+  const redoMove = useCallback(() => {
+    if (mode === 'online' || redoStackRef.current.length === 0) {
+      return;
+    }
+
+    const currentSnapshot = {
+      fen: chess.fen(),
+      whiteTime,
+      blackTime,
+    };
+
+    const nextSnapshot = redoStackRef.current.pop();
+    undoStackRef.current.push(currentSnapshot);
+    loadSnapshot(nextSnapshot);
+
+    if (mode === 'pve' && chess.turn() === aiColor && redoStackRef.current.length > 0) {
+      const followUpSnapshot = redoStackRef.current.pop();
+      undoStackRef.current.push(nextSnapshot);
+      loadSnapshot(followUpSnapshot);
+    }
+  }, [aiColor, blackTime, chess, loadSnapshot, mode, whiteTime]);
+
   const createRoom = () => {
     const pin = Math.floor(1000 + Math.random() * 9000).toString();
     setRoomPin(pin);
@@ -93,7 +287,7 @@ const ChessGame = () => {
     setOnlineStatus('waiting');
 
     const channel = supabase.channel(`chess-room-${pin}`, {
-      config: { broadcast: { self: false } }
+      config: { broadcast: { self: false } },
     });
 
     channel
@@ -102,13 +296,12 @@ const ChessGame = () => {
         channel.send({
           type: 'broadcast',
           event: 'start',
-          payload: { fen: chess.fen(), starting: true }
+          payload: { fen: chess.fen(), starting: true },
         });
       })
       .on('broadcast', { event: 'move' }, ({ payload }) => {
         try {
-          chess.move(payload.moveObj);
-          updateGameStatus();
+          applyMove(payload.moveObj, { recordHistory: true });
         } catch (e) {
           console.error('Invalid move received', e);
         }
@@ -128,7 +321,7 @@ const ChessGame = () => {
     setOnlineStatus('waiting');
 
     const channel = supabase.channel(`chess-room-${pin}`, {
-      config: { broadcast: { self: false } }
+      config: { broadcast: { self: false } },
     });
 
     channel
@@ -139,18 +332,17 @@ const ChessGame = () => {
       })
       .on('broadcast', { event: 'move' }, ({ payload }) => {
         try {
-          chess.move(payload.moveObj);
-          updateGameStatus();
+          applyMove(payload.moveObj, { recordHistory: true });
         } catch (e) {
           console.error('Invalid move received', e);
         }
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
+      .subscribe((statusValue) => {
+        if (statusValue === 'SUBSCRIBED') {
           channel.send({
             type: 'broadcast',
             event: 'join',
-            payload: {}
+            payload: {},
           });
         }
       });
@@ -164,55 +356,39 @@ const ChessGame = () => {
 
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-    // Invert board visual for black player if playing online
     let visualR = r;
     let visualC = c;
     if (mode === 'online' && playerColor === 'b') {
       visualR = 7 - r;
       visualC = 7 - c;
     }
-    
+
     const square = files[visualC] + ranks[visualR];
     const piece = chess.get(square);
 
-    // If a square is already selected, try to move there
     if (selectedSquare) {
-      // Find out if the clicked square is valid move
-      const isMoveValid = validMoves.some(m => m.to === square);
+      const isMoveValid = validMoves.some((move) => move.to === square);
 
       if (isMoveValid) {
         try {
-          // If promotion, auto-promote to queen for simplicity
           const moveObj = {
             from: selectedSquare,
             to: square,
-            promotion: 'q'
+            promotion: 'q',
           };
-          chess.move(moveObj);
-          setSelectedSquare(null);
-          setValidMoves([]);
-          updateGameStatus();
 
-          // Broadcast if online
-          if (mode === 'online' && channelRef.current) {
-            channelRef.current.send({
-              type: 'broadcast',
-              event: 'move',
-              payload: { moveObj }
-            });
+          const moveApplied = applyMove(moveObj, { recordHistory: true, broadcast: mode === 'online' });
+          if (moveApplied) {
+            return;
           }
-          return;
         } catch (e) {
-          // invalid move silently fails
           console.error(e);
         }
       }
     }
 
-    // Selecting a piece
     if (piece && piece.color === chess.turn()) {
       setSelectedSquare(square);
-      // Get valid moves for this piece
       const moves = chess.moves({ square, verbose: true });
       setValidMoves(moves);
     } else {
@@ -221,12 +397,19 @@ const ChessGame = () => {
     }
   };
 
-  const resetGame = () => {
-    chess.reset();
-    setSelectedSquare(null);
-    setValidMoves([]);
-    setIsAiThinking(false);
-    updateGameStatus();
+  const handleModeChange = (nextMode) => {
+    if (channelRef.current && mode === 'online' && nextMode !== 'online') {
+      leaveRoom();
+    }
+    if (channelRef.current && mode !== 'online' && nextMode === 'online') {
+      leaveRoom();
+    }
+    setMode(nextMode);
+    resetGame();
+  };
+
+  const handleTimeControlChange = (nextTimeControl) => {
+    resetGame(nextTimeControl);
   };
 
   const renderSquares = () => {
@@ -246,10 +429,10 @@ const ChessGame = () => {
         const isLight = (r + c) % 2 === 0;
         const squareId = files[boardC] + ranks[boardR];
         const piece = board[boardR][boardC];
-        
+
         const isSelected = selectedSquare === squareId;
-        const validMove = validMoves.find(m => m.to === squareId);
-        const isCapture = validMove && piece; // target square has a piece
+        const validMove = validMoves.find((move) => move.to === squareId);
+        const isCapture = validMove && piece;
 
         let classNames = `chess-square ${isLight ? 'light' : 'dark'}`;
         if (isSelected) classNames += ' selected';
@@ -267,8 +450,19 @@ const ChessGame = () => {
         );
       }
     }
+
     return squares;
   };
+
+  const currentTurn = chess.turn();
+  const gameOverTitle = status.includes('Checkmate')
+    ? 'Checkmate'
+    : status.includes('ran out of time')
+      ? 'Time Out'
+      : status.includes('Stalemate')
+        ? 'Stalemate'
+        : 'Draw';
+  const historyDisabled = mode === 'online';
 
   return (
     <div className="chess-container" ref={containerRef}>
@@ -277,27 +471,68 @@ const ChessGame = () => {
         <div className="chess-status">
           {isAiThinking ? 'AI is thinking...' : status}
         </div>
+        <div className="chess-clocks">
+          <div className={`chess-clock ${currentTurn === 'w' && !gameOver ? 'active' : ''}`}>
+            <span>White</span>
+            <strong>{formatClock(whiteTime)}</strong>
+          </div>
+          <div className={`chess-clock ${currentTurn === 'b' && !gameOver ? 'active' : ''}`}>
+            <span>Black</span>
+            <strong>{formatClock(blackTime)}</strong>
+          </div>
+        </div>
       </div>
 
-      <div className="chess-mode-toggle">
-        <button 
-          className={`chess-btn ${mode === 'pvp' ? 'active' : ''}`}
-          onClick={() => { setMode('pvp'); resetGame(); }}
-        >
-          2 Player
-        </button>
-        <button 
-          className={`chess-btn ${mode === 'pve' ? 'active' : ''}`}
-          onClick={() => { setMode('pve'); resetGame(); }}
-        >
-          VS AI (Alpha-Beta)
-        </button>
-        <button 
-          className={`chess-btn ${mode === 'online' ? 'active' : ''}`}
-          onClick={() => { setMode('online'); resetGame(); }}
-        >
-          Online Friend
-        </button>
+      <div className="chess-toolbar">
+        <div className="chess-mode-toggle">
+          <button
+            className={`chess-btn ${mode === 'pvp' ? 'active' : ''}`}
+            onClick={() => handleModeChange('pvp')}
+          >
+            2 Player
+          </button>
+          <button
+            className={`chess-btn ${mode === 'pve' ? 'active' : ''}`}
+            onClick={() => handleModeChange('pve')}
+          >
+            VS AI (Alpha-Beta)
+          </button>
+          <button
+            className={`chess-btn ${mode === 'online' ? 'active' : ''}`}
+            onClick={() => handleModeChange('online')}
+          >
+            Online Friend
+          </button>
+        </div>
+
+        <div className="chess-actions">
+          <label className={`time-control ${historyDisabled ? 'disabled' : ''}`}>
+            <span>Time</span>
+            <select
+              value={timeControl}
+              onChange={(e) => handleTimeControlChange(e.target.value)}
+              disabled={mode === 'online'}
+            >
+              {TIME_CONTROL_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="move-controls">
+            <button className="chess-btn" onClick={undoMove} disabled={historyDisabled || undoStackRef.current.length === 0}>
+              Undo
+            </button>
+            <button className="chess-btn" onClick={redoMove} disabled={historyDisabled || redoStackRef.current.length === 0}>
+              Redo
+            </button>
+            <button className="chess-btn" onClick={() => resetGame()}>
+              Reset
+            </button>
+          </div>
+        </div>
       </div>
 
       {mode === 'online' && (
@@ -308,16 +543,16 @@ const ChessGame = () => {
                 Create Room (Get PIN)
               </button>
               <div className="join-room">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   maxLength={4}
                   placeholder="Enter 4-digit PIN"
                   value={inputPin}
                   onChange={(e) => setInputPin(e.target.value.replace(/[^0-9]/g, ''))}
                   className="pin-input"
                 />
-                <button 
-                  className="chess-btn join-room-btn" 
+                <button
+                  className="chess-btn join-room-btn"
                   onClick={() => joinRoom(inputPin)}
                   disabled={inputPin.length !== 4}
                 >
@@ -341,6 +576,10 @@ const ChessGame = () => {
         </div>
       )}
 
+      {mode === 'online' && (
+        <div className="chess-mode-note">Undo, redo, and clock controls stay local in this version of online play.</div>
+      )}
+
       <div className="chess-board-wrapper">
         <div className={`chess-board-grid ${(mode === 'online' && playerColor === 'b') ? 'flipped' : ''}`}>
           {renderSquares()}
@@ -348,8 +587,10 @@ const ChessGame = () => {
 
         {gameOver && (
           <div className="chess-game-over">
-            <h3>{status.includes('Checkmate') ? 'Checkmate' : 'Draw'}</h3>
-            <button className="reset-btn" onClick={resetGame}>Play Again</button>
+            <h3>{gameOverTitle}</h3>
+            <button className="reset-btn" onClick={() => resetGame()}>
+              Play Again
+            </button>
           </div>
         )}
       </div>

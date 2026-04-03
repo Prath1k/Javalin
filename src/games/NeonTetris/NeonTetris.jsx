@@ -25,6 +25,7 @@ const RANDOM_PIECE = () => {
 export default function NeonTetris() {
   const { highScores, updateHighScore } = useScores();
   const highScore = highScores['neon-tetris'] || 0;
+  const [selectedLevel, setSelectedLevel] = useState(1);
 
   const [grid, setGrid] = useState(Array.from({ length: ROWS }, () => Array(COLS).fill(0)));
   const [activePiece, setActivePiece] = useState(null);
@@ -194,7 +195,7 @@ export default function NeonTetris() {
   const resetGame = () => {
     setGrid(Array.from({ length: ROWS }, () => Array(COLS).fill(0)));
     setScore(0);
-    setLevel(1);
+    setLevel(selectedLevel);
     setNextPiece(RANDOM_PIECE());
     setGameOver(false);
     setIsPaused(false);
@@ -233,6 +234,26 @@ export default function NeonTetris() {
   return (
     <div className={`neon-tetris-container ${shaking ? 'screen-shake' : ''}`}>
       <div className="tetris-sidebar">
+        <div className="stat-box">
+          <label>START LEVEL</label>
+          <select
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(Number(e.target.value))}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: 'inherit',
+              font: 'inherit',
+              textAlign: 'center'
+            }}
+          >
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((lvl) => (
+              <option key={lvl} value={lvl}>LEVEL {lvl}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Next Piece Display */}
         <div className="next-piece-box">
           <label>NEXT PIECE</label>

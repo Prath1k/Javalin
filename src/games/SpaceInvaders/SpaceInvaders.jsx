@@ -8,6 +8,7 @@ const ALIEN_COLORS = { squid: '#ff0055', crab: '#00ffcc', octopus: '#cc00ff', uf
 export default function SpaceInvaders() {
   const { highScores, updateHighScore, guestId } = useScores();
   const highScore = highScores['space-invaders'] || 0;
+  const [selectedLevel, setSelectedLevel] = useState(1);
   
   const canvasRef = useRef(null);
   const [uiState, setUiState] = useState({ score: 0, level: 1, over: false });
@@ -69,11 +70,11 @@ export default function SpaceInvaders() {
 
   const startGame = () => {
     stateRef.current.score = 0;
-    stateRef.current.level = 1;
+    stateRef.current.level = selectedLevel;
     stateRef.current.isGameOver = false;
     stateRef.current.player.x = 375;
-    initLevel(1);
-    setUiState({ score: 0, level: 1, over: false });
+    initLevel(selectedLevel);
+    setUiState({ score: 0, level: selectedLevel, over: false });
     setShowTutorial(false);
   };
 
@@ -304,6 +305,27 @@ export default function SpaceInvaders() {
               <li><strong style={{color: '#ffea00'}}>Command UFO</strong>: High value target (+50 pts)</li>
               <li><strong style={{color: '#ff0055'}}>Squid Class</strong>: Standard threat (+30 pts)</li>
             </ul>
+            <div style={{ marginBottom: 18, textAlign: 'left' }}>
+              <label style={{ display: 'block', marginBottom: 8, color: 'var(--text-primary)', fontWeight: 600 }}>
+                Start Wave
+              </label>
+              <select
+                value={selectedLevel}
+                onChange={(e) => setSelectedLevel(Number(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-base)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((lvl) => (
+                  <option key={lvl} value={lvl}>Wave {lvl}</option>
+                ))}
+              </select>
+            </div>
             <button className="sign-in-btn" onClick={startGame} style={{
               width: '100%', padding: '16px', borderRadius: 8, background: '#00ffcc',
               color: '#000', fontWeight: 'bold', fontSize: '1.1rem', border: 'none', cursor: 'pointer',

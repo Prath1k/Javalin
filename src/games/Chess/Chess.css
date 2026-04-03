@@ -33,11 +33,59 @@
   min-height: 24px;
 }
 
+.chess-clocks {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.chess-clock {
+  min-width: 140px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  color: #d4d4d8;
+}
+
+.chess-clock span {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  color: #a1a1aa;
+}
+
+.chess-clock strong {
+  font-size: 1.15rem;
+  letter-spacing: 1px;
+}
+
+.chess-clock.active {
+  border-color: rgba(167, 139, 250, 0.9);
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.25), 0 0 24px rgba(167, 139, 250, 0.12);
+  color: #fff;
+}
+
+.chess-toolbar {
+  width: 100%;
+  max-width: min(90vh, 860px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
 .chess-mode-toggle {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .chess-btn {
@@ -61,6 +109,63 @@
 .chess-btn:hover:not(.active) {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
+}
+
+.chess-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chess-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.move-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.time-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #d4d4d8;
+  font-size: 0.85rem;
+}
+
+.time-control span {
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: #a1a1aa;
+}
+
+.time-control select {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-family: inherit;
+  min-width: 160px;
+}
+
+.time-control select:disabled {
+  opacity: 0.55;
+}
+
+.chess-mode-note {
+  width: 100%;
+  max-width: min(90vh, 860px, 100%);
+  margin-bottom: 14px;
+  text-align: center;
+  color: #a1a1aa;
+  font-size: 0.9rem;
 }
 
 .chess-board-wrapper {
@@ -238,5 +343,21 @@
 
 .chess-board-grid.flipped .chess-piece {
   transform: rotate(180deg);
+}
+
+@media (max-width: 720px) {
+  .chess-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .time-control {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .time-control select {
+    width: 100%;
+  }
 }
 
