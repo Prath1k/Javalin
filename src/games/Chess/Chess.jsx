@@ -176,7 +176,11 @@ const ChessGame = () => {
   }, [chess, endGameOnTime, gameOver, mode, timeControl, board]);
 
   useEffect(() => {
-    if (mode !== 'pve' || gameOver || isAiThinking || chess.turn() !== aiColor) {
+    if (mode !== 'pve' || gameOver || chess.turn() !== aiColor) {
+      return undefined;
+    }
+
+    if (aiTimeoutRef.current) {
       return undefined;
     }
 
@@ -189,14 +193,8 @@ const ChessGame = () => {
       setIsAiThinking(false);
       aiTimeoutRef.current = null;
     }, 50);
-
-    return () => {
-      if (aiTimeoutRef.current) {
-        window.clearTimeout(aiTimeoutRef.current);
-        aiTimeoutRef.current = null;
-      }
-    };
-  }, [aiColor, applyMove, chess, gameOver, isAiThinking, mode, board]);
+    return undefined;
+  }, [aiColor, applyMove, chess, gameOver, mode, board]);
 
   useEffect(() => {
     return () => {
