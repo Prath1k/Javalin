@@ -1,14 +1,17 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useScores } from '../../ScoreContext';
+import { triggerHaptic } from '../../utils/haptics';
 import './NeonPong.css';
 
 export default function NeonPong() {
   const { highScores, updateHighScore } = useScores();
   const highScore = highScores['neon-pong'] || 0;
+  const winningScore = 7;
   
   const canvasRef = useRef(null);
-  const [uiState, setUiState] = useState({ score: 0, aiScore: 0, level: 1, over: false });
+  const [uiState, setUiState] = useState({ score: 0, aiScore: 0, level: 1, over: false, winner: null });
   const [showTutorial, setShowTutorial] = useState(true);
+  const [gameMode, setGameMode] = useState('ai');
 
   const stateRef = useRef({
     player: { y: 250, height: 100, width: 15, x: 20, speed: 8 },
@@ -21,13 +24,16 @@ export default function NeonPong() {
     keys: { ArrowUp: false, ArrowDown: false, w: false, s: false }
   });
 
-  const startGame = () => {
+  const startGame = (mode = gameMode) => {
+    setGameMode(mode);
     stateRef.current.score = 0;
     stateRef.current.aiScore = 0;
     stateRef.current.rally = 0;
-    stateRef.current.ai.speed = 5;
+    stateRef.current.player.y = 250;
+    stateRef.current.ai.y = 250;
+    stateRef.current.ai.speed = mode === 'local' ? 8 : 5;
     stateRef.current.ball = { x: 400, y: 300, vx: 5, vy: 5, radius: 10, speed: 7 };
-    setUiState({ score: 0, aiScore: 0, level: 1, over: false });
+    setUiState({ score: 0, aiScore: 0, level: 1, over: false, winner: null });
     setShowTutorial(false);
   };
 
@@ -37,24 +43,67 @@ export default function NeonPong() {
     if (direction === 'down') k.ArrowDown = isPressed;
   };
 
-  const endRally = (winner) => {
+  const resetAllKeys = () => {
+    stateRef.current.keys.ArrowUp = false;
+    stateRef.current.keys.ArrowDown = false;
+    stateRef.current.keys.w = false;
+    stateRef.current.keys.s = false;
+  };
+
+  const switchModeInGame = (nextMode) => {
+    resetAllKeys();
+    startGame(nextMode);
+  };
+
+  const returnToModeMenu = () => {
+    resetAllKeys();
+    setShowTutorial(true);
+  };
+
+    const endRally = (winner) => {
       const s = stateRef.current;
       if (winner === 'player') {
           s.score++;
-          s.rally++;
+          if (gameMode === 'ai') {
+            s.rally++;
+          }
       } else {
           s.aiScore++;
-          if (s.score > highScore) {
+        triggerHaptic('danger', { key: 'neon-pong-concede', cooldown: 250 });
+        if (gameMode === 'ai' && s.score > highScore) {
               updateHighScore('neon-pong', s.score);
           }
-          setUiState(p => ({ ...p, over: true }));
-          return;
+        if (gameMode === 'ai') {
+        triggerHaptic('gameOver', { key: 'neon-pong-over', cooldown: 500 });
+        setUiState(p => ({ ...p, over: true, winner: 'ai' }));
+        return;
+        }
+      }
+
+      if (gameMode === 'local' && (s.score >= winningScore || s.aiScore >= winningScore)) {
+          triggerHaptic('gameOver', { key: 'neon-pong-local-over', cooldown: 500 });
+        setUiState(p => ({
+        ...p,
+        score: s.score,
+        aiScore: s.aiScore,
+        over: true,
+        winner: s.score > s.aiScore ? 'player1' : 'player2',
+        }));
+        return;
       }
       
-      const dirX = winner === 'player' ? -1 : 1;
-      s.ball = { x: 400, y: 300, vx: dirX * (5 + (s.rally*0.5)), vy: (Math.random()>0.5?1:-1) * (5 + (s.rally*0.3)), radius: 10, speed: 7 + (s.rally*0.5) };
-      s.ai.speed = 4.5 + (s.rally * 0.4);
-      setUiState(p => ({ ...p, score: s.score, aiScore: s.aiScore, level: s.rally + 1 }));
+      const dirX = winner === 'player' ? 1 : -1;
+      const speedBoost = gameMode === 'ai' ? s.rally * 0.5 : 0;
+      s.ball = {
+        x: 400,
+        y: 300,
+        vx: dirX * (5 + speedBoost),
+        vy: (Math.random()>0.5?1:-1) * (5 + (gameMode === 'ai' ? s.rally * 0.3 : 0)),
+        radius: 10,
+        speed: 7 + speedBoost,
+      };
+      s.ai.speed = gameMode === 'ai' ? 4.5 + (s.rally * 0.4) : 8;
+      setUiState(p => ({ ...p, score: s.score, aiScore: s.aiScore, level: s.rally + 1, winner: null }));
   };
 
   useEffect(() => {
@@ -66,13 +115,17 @@ export default function NeonPong() {
 
     const keyD = e => {
       const k = stateRef.current.keys;
-      if (['ArrowUp', 'w', 'W'].includes(e.key)) k.ArrowUp = true;
-      if (['ArrowDown', 's', 'S'].includes(e.key)) k.ArrowDown = true;
+      if (e.key === 'ArrowUp') k.ArrowUp = true;
+      if (e.key === 'ArrowDown') k.ArrowDown = true;
+      if (e.key === 'w' || e.key === 'W') k.w = true;
+      if (e.key === 's' || e.key === 'S') k.s = true;
     };
     const keyU = e => {
       const k = stateRef.current.keys;
-      if (['ArrowUp', 'w', 'W'].includes(e.key)) k.ArrowUp = false;
-      if (['ArrowDown', 's', 'S'].includes(e.key)) k.ArrowDown = false;
+      if (e.key === 'ArrowUp') k.ArrowUp = false;
+      if (e.key === 'ArrowDown') k.ArrowDown = false;
+      if (e.key === 'w' || e.key === 'W') k.w = false;
+      if (e.key === 's' || e.key === 'S') k.s = false;
     };
     window.addEventListener('keydown', keyD);
     window.addEventListener('keyup', keyU);
@@ -89,16 +142,21 @@ export default function NeonPong() {
     const loop = () => {
       const s = stateRef.current;
       if (!uiState.over) {
-        
-        if (s.keys.ArrowUp) s.player.y -= s.player.speed;
-        if (s.keys.ArrowDown) s.player.y += s.player.speed;
+        const leftUp = gameMode === 'ai' ? (s.keys.w || s.keys.ArrowUp) : s.keys.w;
+        const leftDown = gameMode === 'ai' ? (s.keys.s || s.keys.ArrowDown) : s.keys.s;
+        if (leftUp) s.player.y -= s.player.speed;
+        if (leftDown) s.player.y += s.player.speed;
         if (s.player.y < 0) s.player.y = 0;
         if (s.player.y > 600 - s.player.height) s.player.y = 600 - s.player.height;
 
-        
-        const aiCenter = s.ai.y + (s.ai.height/2);
-        if (aiCenter < s.ball.y - 10) s.ai.y += s.ai.speed;
-        else if (aiCenter > s.ball.y + 10) s.ai.y -= s.ai.speed;
+        if (gameMode === 'ai') {
+          const aiCenter = s.ai.y + (s.ai.height/2);
+          if (aiCenter < s.ball.y - 10) s.ai.y += s.ai.speed;
+          else if (aiCenter > s.ball.y + 10) s.ai.y -= s.ai.speed;
+        } else {
+          if (s.keys.ArrowUp) s.ai.y -= s.ai.speed;
+          if (s.keys.ArrowDown) s.ai.y += s.ai.speed;
+        }
         
         if (s.ai.y < 0) s.ai.y = 0;
         if (s.ai.y > 600 - s.ai.height) s.ai.y = 600 - s.ai.height;
@@ -116,6 +174,7 @@ export default function NeonPong() {
         let hitPaddle = checkCollision(s.ball, s.player) ? 'player' : checkCollision(s.ball, s.ai) ? 'ai' : null;
         
         if (hitPaddle) {
+          triggerHaptic('soft', { key: 'neon-pong-hit', cooldown: 40 });
             const paddle = hitPaddle === 'player' ? s.player : s.ai;
             let collidePoint = s.ball.y - (paddle.y + paddle.height/2);
             collidePoint = collidePoint / (paddle.height/2);
@@ -141,7 +200,10 @@ export default function NeonPong() {
 
         
         if (s.ball.x - s.ball.radius < -20) endRally('ai');
-        else if (s.ball.x + s.ball.radius > 820) endRally('player');
+        else if (s.ball.x + s.ball.radius > 820) {
+          triggerHaptic('goal', { key: 'neon-pong-point', cooldown: 250 });
+          endRally('player');
+        }
 
         
         for(let i=s.particles.length-1; i>=0; i--){
@@ -205,7 +267,7 @@ export default function NeonPong() {
       window.removeEventListener('keyup', keyU);
       cancelAnimationFrame(animId);
     };
-  }, [showTutorial, uiState.over, updateHighScore, highScore]);
+  }, [showTutorial, uiState.over, updateHighScore, highScore, gameMode]);
 
   return (
     <div className="neon-pong-container">
@@ -217,30 +279,61 @@ export default function NeonPong() {
         }}>
           <h1 style={{ color: '#ff00ff', textShadow: '0 0 20px #ff00ff', marginBottom: 24, fontSize: 'clamp(2rem, 9vw, 3.5rem)', fontStyle: 'italic' }}>NEON PONG</h1>
           <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 16, border: '1px solid #330033', maxWidth: 560, width: '100%' }}>
-            <h3 style={{ marginBottom: 16, color: '#fff' }}>Protocol: Endless AI Volley</h3>
+            <h3 style={{ marginBottom: 16, color: '#fff' }}>Protocol: Select Match Type</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.5 }}>
-              Deflect the core back to the synthetic intelligence. The rally speed and AI tracking algorithm will intensify after every successful volley. 
+              Choose either an endless AI challenge or local friend mode with split keyboard controls.
               <br /><br />
-              <strong>Missing a single return terminates the connection.</strong>
+              <strong>Local mode is first to {winningScore} points.</strong>
             </p>
             <ul style={{ color: '#ff00ff', textAlign: 'left', marginBottom: 24, lineHeight: 1.6, paddingLeft: 24, fontWeight: 'bold' }}>
-              <li><strong>Move Up:</strong> <kbd>W</kbd> or Up Arrow</li>
-              <li><strong>Move Down:</strong> <kbd>S</kbd> or Down Arrow</li>
-              <li>Ball accelerates progressively per hit</li>
+              <li><strong>Player 1:</strong> <kbd>W</kbd> / <kbd>S</kbd></li>
+              <li><strong>Player 2:</strong> <kbd>Up</kbd> / <kbd>Down</kbd></li>
+              <li>AI mode keeps the speed-ramp challenge</li>
             </ul>
-            <button className="sign-in-btn" onClick={startGame} style={{
-              width: '100%', padding: '16px', borderRadius: 8, background: '#ff00ff',
-              color: '#000', fontWeight: 'bold', fontSize: '1.2rem', border: 'none', cursor: 'pointer',
-              boxShadow: '0 0 25px rgba(255, 0, 255, 0.5)'
-            }}>INITIALIZE SEQUENCE</button>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <button className="sign-in-btn" onClick={() => startGame('ai')} style={{
+                width: '100%', padding: '16px', borderRadius: 8, background: '#ff00ff',
+                color: '#000', fontWeight: 'bold', fontSize: '1.1rem', border: 'none', cursor: 'pointer',
+                boxShadow: '0 0 25px rgba(255, 0, 255, 0.5)'
+              }}>START AI MODE</button>
+              <button className="sign-in-btn" onClick={() => startGame('local')} style={{
+                width: '100%', padding: '16px', borderRadius: 8, background: '#00ffff',
+                color: '#000', fontWeight: 'bold', fontSize: '1.1rem', border: 'none', cursor: 'pointer',
+                boxShadow: '0 0 25px rgba(0, 255, 255, 0.45)'
+              }}>START LOCAL 2P</button>
+            </div>
           </div>
         </div>
       ) : (
         <>
           <div className="neon-pong-header">
-            <div style={{color: '#ff00ff', textShadow: '0 0 10px #ff00ff'}}>HITS: {uiState.score}</div>
-            <div style={{color: '#fff'}}>SPEED VOLLEY {uiState.level}</div>
-            <div className="high-score-display" style={{color: '#00ffff'}}>SYSTEM MAX: {highScore}</div>
+            <div style={{color: '#ff00ff', textShadow: '0 0 10px #ff00ff'}}>
+              {gameMode === 'local' ? `P1: ${uiState.score}` : `HITS: ${uiState.score}`}
+            </div>
+            <div style={{color: '#fff'}}>
+              {gameMode === 'local' ? 'LOCAL 2P' : `SPEED VOLLEY ${uiState.level}`}
+            </div>
+            <div className="high-score-display" style={{color: '#00ffff'}}>
+              {gameMode === 'local' ? `P2: ${uiState.aiScore}` : `SYSTEM MAX: ${highScore}`}
+            </div>
+          </div>
+
+          <div className="pong-mode-switch" role="group" aria-label="Neon Pong mode switch">
+            <button
+              className={`pong-mode-btn ${gameMode === 'ai' ? 'active' : ''}`}
+              onClick={() => switchModeInGame('ai')}
+            >
+              AI Mode
+            </button>
+            <button
+              className={`pong-mode-btn ${gameMode === 'local' ? 'active' : ''}`}
+              onClick={() => switchModeInGame('local')}
+            >
+              Local 2P
+            </button>
+            <button className="pong-mode-btn" onClick={returnToModeMenu}>
+              Menu
+            </button>
           </div>
           
           <div className="canvas-wrapper-pong">
@@ -248,35 +341,47 @@ export default function NeonPong() {
             
             {uiState.over && (
               <div className="game-over-overlay" style={{ border: '1px solid #ff00ff', boxShadow: '0 0 30px rgba(255, 0, 255, 0.4)' }}>
-                <h2 style={{ color: '#ff00ff', textShadow: '0 0 15px #ff00ff' }}>CONNECTION SEVERED</h2>
-                <p>Total Volleys: {uiState.score}</p>
-                <button className="pacman-btn" style={{background: '#ff00ff', boxShadow: '0 0 15px rgba(255,0,255,0.4)', marginTop: 24}} onClick={startGame}>RECONNECT</button>
+                <h2 style={{ color: '#ff00ff', textShadow: '0 0 15px #ff00ff' }}>
+                  {gameMode === 'local' ? `${uiState.winner === 'player1' ? 'PLAYER 1' : 'PLAYER 2'} WINS` : 'CONNECTION SEVERED'}
+                </h2>
+                <p>
+                  {gameMode === 'local' ? `Final Score: ${uiState.score} - ${uiState.aiScore}` : `Total Volleys: ${uiState.score}`}
+                </p>
+                <button className="pacman-btn" style={{background: '#ff00ff', boxShadow: '0 0 15px rgba(255,0,255,0.4)', marginTop: 24}} onClick={() => startGame(gameMode)}>
+                  {gameMode === 'local' ? 'PLAY AGAIN' : 'RECONNECT'}
+                </button>
               </div>
             )}
           </div>
 
-          <div className="pong-controls-hint game-controls-hint">Desktop: W/S or Arrow Keys. Mobile: hold UP or DOWN.</div>
-
-          <div className="pong-mobile-controls game-touch-controls" role="group" aria-label="Neon Pong touch controls">
-            <button
-              className="pong-ctrl-btn game-touch-btn compact"
-              onPointerDown={(e) => { e.preventDefault(); setPaddleKey('up', true); }}
-              onPointerUp={() => setPaddleKey('up', false)}
-              onPointerCancel={() => setPaddleKey('up', false)}
-              onPointerLeave={() => setPaddleKey('up', false)}
-            >
-              UP
-            </button>
-            <button
-              className="pong-ctrl-btn game-touch-btn compact"
-              onPointerDown={(e) => { e.preventDefault(); setPaddleKey('down', true); }}
-              onPointerUp={() => setPaddleKey('down', false)}
-              onPointerCancel={() => setPaddleKey('down', false)}
-              onPointerLeave={() => setPaddleKey('down', false)}
-            >
-              DOWN
-            </button>
+          <div className="pong-controls-hint game-controls-hint">
+            {gameMode === 'local'
+              ? 'Local 2P: Player 1 uses W/S. Player 2 uses Up/Down arrows.'
+              : 'AI Mode: W/S or Arrow Keys. Mobile: hold UP or DOWN.'}
           </div>
+
+          {gameMode === 'ai' && (
+            <div className="pong-mobile-controls game-touch-controls" role="group" aria-label="Neon Pong touch controls">
+              <button
+                className="pong-ctrl-btn game-touch-btn compact"
+                onPointerDown={(e) => { e.preventDefault(); setPaddleKey('up', true); }}
+                onPointerUp={() => setPaddleKey('up', false)}
+                onPointerCancel={() => setPaddleKey('up', false)}
+                onPointerLeave={() => setPaddleKey('up', false)}
+              >
+                UP
+              </button>
+              <button
+                className="pong-ctrl-btn game-touch-btn compact"
+                onPointerDown={(e) => { e.preventDefault(); setPaddleKey('down', true); }}
+                onPointerUp={() => setPaddleKey('down', false)}
+                onPointerCancel={() => setPaddleKey('down', false)}
+                onPointerLeave={() => setPaddleKey('down', false)}
+              >
+                DOWN
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
