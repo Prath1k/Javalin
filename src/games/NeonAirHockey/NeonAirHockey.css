@@ -1,0 +1,265 @@
+.air-hockey-container {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(14px, 2.8vw, 28px);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(255, 47, 217, 0.12), transparent 38%),
+    radial-gradient(circle at 85% 90%, rgba(34, 243, 255, 0.12), transparent 40%),
+    #040611;
+  color: #eef2ff;
+  font-family: 'Orbitron', 'Segoe UI', sans-serif;
+}
+
+.air-hockey-header {
+  width: min(100%, 980px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.score-block,
+.mode-block {
+  background: rgba(10, 16, 30, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.score-block.pink {
+  color: #ff6ae8;
+  text-shadow: 0 0 9px rgba(255, 106, 232, 0.45);
+}
+
+.score-block.cyan {
+  color: #56eeff;
+  text-shadow: 0 0 9px rgba(86, 238, 255, 0.45);
+}
+
+.mode-block {
+  color: #f2f8ff;
+}
+
+.air-hockey-switch {
+  width: min(100%, 980px);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.air-hockey-canvas-wrap {
+  width: min(100%, 980px);
+  aspect-ratio: 5 / 3;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 14px 50px rgba(0, 0, 0, 0.45);
+}
+
+.air-hockey-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.air-hockey-controls {
+  margin-top: 12px;
+  color: #c4cee6;
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.air-hockey-touch-joysticks {
+  width: min(100%, 980px);
+  margin-top: 12px;
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.touch-stick-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #d6e6ff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.touch-stick-base {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  position: relative;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  touch-action: none;
+  user-select: none;
+}
+
+.touch-stick-thumb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  margin-top: -23px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  transition: transform 0.05s linear;
+}
+
+.touch-stick-thumb.pink {
+  background: radial-gradient(circle at 30% 30%, #ffc6f7, #ff2fd9);
+  box-shadow: 0 0 18px rgba(255, 47, 217, 0.46);
+}
+
+.touch-stick-thumb.cyan {
+  background: radial-gradient(circle at 30% 30%, #c9feff, #22f3ff);
+  box-shadow: 0 0 18px rgba(34, 243, 255, 0.46);
+}
+
+.air-hockey-intro {
+  width: min(100%, 660px);
+  padding: clamp(18px, 4vw, 30px);
+  border-radius: 16px;
+  background: rgba(8, 13, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset, 0 18px 50px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.air-hockey-intro h1 {
+  margin: 0 0 12px;
+  color: #ffffff;
+  letter-spacing: 2px;
+  text-shadow: 0 0 16px rgba(86, 238, 255, 0.36);
+}
+
+.air-hockey-intro p {
+  color: #bcc8e3;
+  line-height: 1.55;
+  margin-bottom: 16px;
+}
+
+.air-hockey-intro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.air-hockey-help {
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #d9e5ff;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.air-hockey-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.air-hockey-btn:hover {
+  transform: translateY(-1px);
+}
+
+.air-hockey-btn.primary {
+  color: #120814;
+  background: linear-gradient(90deg, #ff5eea, #ffa7f3);
+  box-shadow: 0 0 20px rgba(255, 94, 234, 0.35);
+}
+
+.air-hockey-btn.secondary {
+  color: #00131a;
+  background: linear-gradient(90deg, #41deff, #9af4ff);
+  box-shadow: 0 0 20px rgba(65, 222, 255, 0.32);
+}
+
+.air-hockey-btn.mini {
+  color: #eaf2ff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.air-hockey-btn.mini.active {
+  background: rgba(65, 222, 255, 0.2);
+  border-color: rgba(65, 222, 255, 0.75);
+  color: #dcfdff;
+}
+
+.air-hockey-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 8, 20, 0.76);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.air-hockey-overlay h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 4vw, 2.2rem);
+  color: #ffffff;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.35);
+}
+
+.air-hockey-overlay p {
+  margin: 0;
+  color: #ccd8f3;
+}
+
+.air-hockey-overlay-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .air-hockey-intro-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .air-hockey-header {
+    justify-content: center;
+  }
+
+  .score-block,
+  .mode-block {
+    text-align: center;
+  }
+
+  .air-hockey-touch-joysticks {
+    display: flex;
+  }
+}

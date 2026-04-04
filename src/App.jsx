@@ -12,6 +12,7 @@ import RhythmClicker from './games/RhythmClicker/RhythmClicker';
 import TerminalHacker from './games/TerminalHacker/TerminalHacker';
 import QuantumSweeper from './games/QuantumSweeper/QuantumSweeper';
 import NeonPong from './games/NeonPong/NeonPong';
+import NeonAirHockey from './games/NeonAirHockey/NeonAirHockey';
 import SortViz from './games/SortViz/SortViz';
 import HexConnect from './games/HexConnect/HexConnect';
 import ChessGame from './games/Chess/Chess';
@@ -146,6 +147,16 @@ const GAMES = [
     icon: '🏓',
     image: imgNeonPong,
     component: NeonPong,
+    status: 'active',
+  },
+  {
+    id: 'neon-air-hockey',
+    title: 'Neon Air Hockey',
+    genre: 'Arcade / Sports',
+    desc: 'High-speed glow rink duels with VS AI and local 2P controls on one keyboard.',
+    icon: '🏒',
+    image: null,
+    component: NeonAirHockey,
     status: 'active',
   },
   {
