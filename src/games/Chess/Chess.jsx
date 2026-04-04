@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Chess } from 'chess.js';
-import { getBestMove } from './ai';
+import { getBestMove, getSmartHint } from './ai';
 import { Piece } from './Pieces';
 import { supabase } from '../../supabaseClient';
 import './Chess.css';
@@ -12,6 +12,12 @@ const TIME_CONTROL_OPTIONS = [
   { value: '5', label: '5 Minutes', seconds: 300 },
   { value: '10', label: '10 Minutes', seconds: 600 },
   { value: '15', label: '15 Minutes', seconds: 900 },
+];
+
+const AI_DIFFICULTY_OPTIONS = [
+  { value: 'easy', label: 'Easy (Beginner Friendly)' },
+  { value: 'medium', label: 'Medium (Stronger)' },
+  { value: 'hard', label: 'Hard (Deep Search, No Randomness)' },
 ];
 
 const getInitialClockSeconds = (value) => {
@@ -35,7 +41,10 @@ const ChessGame = () => {
   const [validMoves, setValidMoves] = useState([]);
   const [mode, setMode] = useState('pvp');
   const [aiColor, setAiColor] = useState('b');
+  const [aiDifficulty, setAiDifficulty] = useState('medium');
+  const [beginnerAssist, setBeginnerAssist] = useState(false);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [hintMove, setHintMove] = useState(null);
   const [timeControl, setTimeControl] = useState('off');
   const [whiteTime, setWhiteTime] = useState(getInitialClockSeconds('off'));
   const [blackTime, setBlackTime] = useState(getInitialClockSeconds('off'));
@@ -49,6 +58,7 @@ const ChessGame = () => {
   const undoStackRef = useRef([]);
   const redoStackRef = useRef([]);
   const aiTimeoutRef = useRef(null);
+  const aiMovedLastTurnRef = useRef(false);
   const containerRef = useRef(null);
 
   const clearAiTimeout = useCallback(() => {
@@ -101,6 +111,8 @@ const ChessGame = () => {
     chess.load(snapshot.fen);
     setWhiteTime(snapshot.whiteTime);
     setBlackTime(snapshot.blackTime);
+    aiMovedLastTurnRef.current = false;
+    setHintMove(null);
     setSelectedSquare(null);
     setValidMoves([]);
     clearAiTimeout();
@@ -122,6 +134,7 @@ const ChessGame = () => {
 
     setSelectedSquare(null);
     setValidMoves([]);
+    setHintMove(null);
     updateGameStatus();
 
     if (broadcast && mode === 'online' && channelRef.current) {
@@ -186,15 +199,16 @@ const ChessGame = () => {
 
     setIsAiThinking(true);
     aiTimeoutRef.current = window.setTimeout(() => {
-      const bestMove = getBestMove(chess, 3);
+      const bestMove = getBestMove(chess, aiDifficulty);
       if (bestMove) {
-        applyMove(bestMove);
+        const applied = applyMove(bestMove);
+        aiMovedLastTurnRef.current = Boolean(applied);
       }
       setIsAiThinking(false);
       aiTimeoutRef.current = null;
     }, 50);
     return undefined;
-  }, [aiColor, applyMove, chess, gameOver, mode, board]);
+  }, [aiColor, aiDifficulty, applyMove, chess, gameOver, mode, board]);
 
   useEffect(() => {
     return () => {
@@ -221,6 +235,8 @@ const ChessGame = () => {
     undoStackRef.current = [];
     redoStackRef.current = [];
     clearAiTimeout();
+    aiMovedLastTurnRef.current = false;
+    setHintMove(null);
     setSelectedSquare(null);
     setValidMoves([]);
     setTimeControl(nextTimeControl);
@@ -410,6 +426,41 @@ const ChessGame = () => {
     resetGame(nextTimeControl);
   };
 
+  const handleAiDifficultyChange = (nextDifficulty) => {
+    setAiDifficulty(nextDifficulty);
+    if (mode === 'pve') {
+      resetGame();
+    }
+  };
+
+  const requestHint = useCallback(() => {
+    if (mode !== 'pve' || gameOver || isAiThinking || chess.turn() === aiColor) {
+      return;
+    }
+
+    const smartHint = getSmartHint(chess, aiDifficulty);
+    if (!smartHint) {
+      setHintMove(null);
+      return;
+    }
+
+    setHintMove(smartHint);
+  }, [aiColor, aiDifficulty, chess, gameOver, isAiThinking, mode]);
+
+  useEffect(() => {
+    if (!aiMovedLastTurnRef.current) {
+      return;
+    }
+
+    aiMovedLastTurnRef.current = false;
+
+    if (!beginnerAssist || mode !== 'pve' || gameOver || isAiThinking || chess.turn() === aiColor) {
+      return;
+    }
+
+    requestHint();
+  }, [aiColor, beginnerAssist, board, chess, gameOver, isAiThinking, mode, requestHint]);
+
   const renderSquares = () => {
     const squares = [];
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -431,11 +482,15 @@ const ChessGame = () => {
         const isSelected = selectedSquare === squareId;
         const validMove = validMoves.find((move) => move.to === squareId);
         const isCapture = validMove && piece;
+        const isHintFrom = hintMove?.from === squareId;
+        const isHintTo = hintMove?.to === squareId;
 
         let classNames = `chess-square ${isLight ? 'light' : 'dark'}`;
         if (isSelected) classNames += ' selected';
         if (validMove) classNames += ' valid-move';
         if (isCapture) classNames += ' has-piece';
+        if (isHintFrom) classNames += ' hint-from';
+        if (isHintTo) classNames += ' hint-to';
 
         squares.push(
           <div
@@ -467,7 +522,7 @@ const ChessGame = () => {
       <div className="chess-header">
         <h2 className="chess-title">Grandmaster Engine</h2>
         <div className="chess-status">
-          {isAiThinking ? 'AI is thinking...' : status}
+          {isAiThinking ? `AI is thinking (${aiDifficulty})...` : status}
         </div>
         <div className="chess-clocks">
           <div className={`chess-clock ${currentTurn === 'w' && !gameOver ? 'active' : ''}`}>
@@ -519,6 +574,33 @@ const ChessGame = () => {
             </select>
           </label>
 
+          {mode === 'pve' && (
+            <label className="time-control ai-level-control">
+              <span>AI Level</span>
+              <select
+                value={aiDifficulty}
+                onChange={(e) => handleAiDifficultyChange(e.target.value)}
+                disabled={isAiThinking}
+              >
+                {AI_DIFFICULTY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {mode === 'pve' && (
+            <button
+              className={`chess-btn ${beginnerAssist ? 'active' : ''}`}
+              onClick={() => setBeginnerAssist((value) => !value)}
+              disabled={isAiThinking}
+            >
+              Beginner Assist: {beginnerAssist ? 'On' : 'Off'}
+            </button>
+          )}
+
           <div className="move-controls">
             <button className="chess-btn" onClick={undoMove} disabled={historyDisabled || undoStackRef.current.length === 0}>
               Undo
@@ -526,12 +608,25 @@ const ChessGame = () => {
             <button className="chess-btn" onClick={redoMove} disabled={historyDisabled || redoStackRef.current.length === 0}>
               Redo
             </button>
+            <button
+              className="chess-btn"
+              onClick={requestHint}
+              disabled={mode !== 'pve' || gameOver || isAiThinking || chess.turn() === aiColor}
+            >
+              Hint
+            </button>
             <button className="chess-btn" onClick={() => resetGame()}>
               Reset
             </button>
           </div>
         </div>
       </div>
+
+      {mode === 'pve' && hintMove && !gameOver && (
+        <div className="chess-mode-note">
+          Hint: {hintMove.from} to {hintMove.to} ({hintMove.san}) {hintMove.reason}
+        </div>
+      )}
 
       {mode === 'online' && (
         <div className="online-room-controls">
