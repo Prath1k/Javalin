@@ -113,6 +113,7 @@ export default function Ludo() {
   const [captureEffect, setCaptureEffect] = useState(null);
   const [diceRolling, setDiceRolling] = useState(false);
   const rollTimeoutRef = useRef(null);
+  const logEndRef = useRef(null);
 
   useEffect(() => {
     if (isOnline && networkState && networkState.phase) setGameState(networkState);
@@ -199,6 +200,12 @@ export default function Ludo() {
 
   useEffect(() => { return () => { if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current); }; }, []);
 
+  useEffect(() => {
+    if (logEndRef.current) {
+      logEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [gameState.logs.length]);
+
   const handleMove = useCallback((tokenIndex) => {
     if (!currentSeat || !isMyTurn) return;
 
@@ -279,6 +286,14 @@ export default function Ludo() {
   }
 
   const validForCurrent = gameState.awaitingMove ? gameState.availableMoves : [];
+  const currentTokens = currentSeat ? (gameState.tokens[currentSeat.id] || []) : [];
+
+  const describeTokenPos = (steps) => {
+    if (steps === -1) return 'Yard';
+    if (steps === 57) return 'Home';
+    if (steps >= 52) return `Lane ${steps - 51}`;
+    return `Track ${steps + 1}`;
+  };
 
   // Build grid cells
   const gridCells = [];
@@ -368,6 +383,16 @@ export default function Ludo() {
             zIndex: isInteractive ? 20 : 10,
           }}
           onClick={() => isInteractive && handleMove(tIdx)}
+          onKeyDown={(e) => {
+            if (!isInteractive) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleMove(tIdx);
+            }
+          }}
+          role={isInteractive ? 'button' : undefined}
+          tabIndex={isInteractive ? 0 : -1}
+          aria-label={`${COLOR_NAMES[seat.color]} token ${tIdx + 1} ${isInteractive ? 'selectable' : 'not selectable'}`}
           title={`${COLOR_NAMES[seat.color]} Token ${tIdx + 1}`}
         >
           <span className="token-num">{tIdx + 1}</span>
@@ -401,6 +426,13 @@ export default function Ludo() {
             <div className="turn-label" style={{ color: currentSeat ? COLOR_HEX[currentSeat.color] : '#fff' }}>
               {gameState.phase === 'FINISHED' ? '🎉 Game Over' : `${currentSeat?.name}'s Turn`}
             </div>
+            <div className="turn-subtext">
+              {gameState.phase === 'FINISHED'
+                ? 'Match completed. Start a new round from below.'
+                : gameState.awaitingMove
+                  ? (isMyTurn ? 'Pick one highlighted token to move.' : `${currentSeat?.name} is choosing a token.`)
+                  : (isMyTurn ? 'Roll the dice to continue.' : `Waiting for ${currentSeat?.name} to roll.`)}
+            </div>
             <div className="dice-row">
               <div className={`dice-container ${diceRolling ? 'rolling' : ''} ${isMyTurn && !gameState.awaitingMove && gameState.phase === 'PLAY' && !diceRolling ? 'clickable' : ''}`}
                 onClick={rollDice}>
@@ -420,6 +452,33 @@ export default function Ludo() {
               </div>
             </div>
           </div>
+
+          {gameState.phase !== 'FINISHED' && (
+            <div className="quick-move-panel">
+              <div className="quick-move-title">Available Moves</div>
+              {gameState.awaitingMove && isMyTurn ? (
+                <div className="quick-move-list">
+                  {validForCurrent.map((tokenIdx) => {
+                    const steps = currentTokens[tokenIdx] ?? -1;
+                    return (
+                      <button
+                        key={`quick-${tokenIdx}`}
+                        className={`quick-move-token color-${currentSeat?.color || 'red'}`}
+                        onClick={() => handleMove(tokenIdx)}
+                      >
+                        <span className="quick-token-num">Token {tokenIdx + 1}</span>
+                        <span className="quick-token-pos">{describeTokenPos(steps)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="quick-move-placeholder">
+                  {isMyTurn ? 'Roll to reveal playable tokens.' : 'Waiting for active player.'}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Players */}
           <div className="player-list">
@@ -454,6 +513,7 @@ export default function Ludo() {
               {gameState.logs.map((log, i) => (
                 <div key={log.ts + i} className={`log-entry ${i === gameState.logs.length - 1 ? 'latest' : ''}`}>{log.text}</div>
               ))}
+              <div ref={logEndRef} />
             </div>
           </div>
 

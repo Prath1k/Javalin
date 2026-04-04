@@ -66,6 +66,15 @@
   margin-bottom: 12px;
 }
 
+.turn-subtext {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  text-align: center;
+  margin-top: -6px;
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
 .dice-row {
   display: flex;
   align-items: center;
@@ -162,6 +171,69 @@
 @keyframes hintPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+.quick-move-panel {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.quick-move-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.quick-move-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.quick-move-token {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  color: #fff;
+}
+
+.quick-move-token:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.quick-move-token.color-red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.quick-move-token.color-green { background: linear-gradient(135deg, #22c55e, #15803d); }
+.quick-move-token.color-yellow { background: linear-gradient(135deg, #fbbf24, #d97706); color: #111827; }
+.quick-move-token.color-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+
+.quick-token-num {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.quick-token-pos {
+  display: block;
+  font-size: 0.68rem;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.quick-move-placeholder {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* ========== PLAYER CARDS ========== */
@@ -323,6 +395,13 @@
   pointer-events: none;
 }
 
+.ludo-token::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+}
+
 .ludo-token.color-red { background: radial-gradient(circle at 35% 35%, #ff6b6b, #e74c3c, #c0392b); box-shadow: 0 3px 8px rgba(231,76,60,0.5), inset 0 2px 4px rgba(255,255,255,0.4); border: 1.5px solid rgba(255,255,255,0.3); }
 .ludo-token.color-green { background: radial-gradient(circle at 35% 35%, #69db7c, #2ecc71, #27ae60); box-shadow: 0 3px 8px rgba(46,204,113,0.5), inset 0 2px 4px rgba(255,255,255,0.4); border: 1.5px solid rgba(255,255,255,0.3); }
 .ludo-token.color-yellow { background: radial-gradient(circle at 35% 35%, #fff176, #f1c40f, #f39c12); box-shadow: 0 3px 8px rgba(241,196,15,0.5), inset 0 2px 4px rgba(255,255,255,0.5); border: 1.5px solid rgba(255,255,255,0.3); }
@@ -331,6 +410,10 @@
 .token-num { font-size: clamp(0.5rem, 1vw, 0.75rem); font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); z-index: 2; }
 .ludo-token.selectable { cursor: pointer; pointer-events: all; animation: tokenBounce 1s infinite; filter: brightness(1.15); }
 .ludo-token.selectable:hover { transform: scale(1.25); filter: brightness(1.3); z-index: 25 !important; }
+.ludo-token.selectable:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
 
 .token-ring { position: absolute; inset: -5px; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; animation: ringPulse 1.2s infinite; }
 @keyframes tokenBounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15%) scale(1.08); } }
@@ -454,6 +537,10 @@
     font-size: 0.8rem;
     margin-bottom: 8px;
   }
+  .turn-subtext {
+    font-size: 0.7rem;
+    margin-bottom: 8px;
+  }
   .dice-row { gap: 10px; }
   .dice-container { width: 56px; height: 56px; }
   .ludo-dice-pip { width: 9px; height: 9px; }
@@ -461,6 +548,18 @@
   .roll-btn, .ludo-btn.primary { padding: 10px 14px; font-size: 0.78rem; min-height: 44px; }
   .six-badge { font-size: 0.7rem; padding: 4px 10px; }
   .move-hint { font-size: 0.72rem; }
+
+  .quick-move-panel {
+    padding: 8px;
+    border-radius: 10px;
+  }
+  .quick-move-list {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .quick-move-token {
+    padding: 10px;
+  }
 
   /* Players as compact horizontal list */
   .player-list {
@@ -511,8 +610,8 @@
     width: min(98vw, 48vh);
   }
   .ludo-token {
-    max-width: 18px;
-    max-height: 18px;
+    max-width: 20px;
+    max-height: 20px;
     border-width: 1px;
   }
   .token-num { font-size: 0.35rem; }
