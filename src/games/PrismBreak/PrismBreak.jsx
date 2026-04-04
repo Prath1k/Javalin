@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useScores } from '../../ScoreContext';
+import { triggerHaptic } from '../../utils/haptics';
 import './PrismBreak.css';
 
 const CANVAS_W = 800;
@@ -199,10 +200,12 @@ export default function PrismBreak() {
           if (s.ball.x - s.ball.radius < 0 || s.ball.x + s.ball.radius > CANVAS_W) {
             s.ball.vx *= -1;
             s.shake = 5;
+            triggerHaptic('soft', { key: 'prism-wall', cooldown: 90 });
           }
           if (s.ball.y - s.ball.radius < 0) {
             s.ball.vy *= -1;
             s.shake = 5;
+            triggerHaptic('soft', { key: 'prism-wall', cooldown: 90 });
           }
 
           // Paddle collision
@@ -214,11 +217,13 @@ export default function PrismBreak() {
             s.ball.vy = -Math.sqrt(Math.abs(s.ball.speed**2 - s.ball.vx**2));
             s.ball.y = s.paddle.y - s.ball.radius; // Snap to top
             s.shake = 8;
+            triggerHaptic('hit', { key: 'prism-paddle', cooldown: 60 });
           }
 
           // Game Over
           if (s.ball.y + s.ball.radius > CANVAS_H) {
             if (s.score > highScore) updateHighScore('prism-break', s.score);
+            triggerHaptic('gameOver', { key: 'prism-over', cooldown: 500 });
             setUiState(prev => ({ ...prev, over: true }));
           }
 
@@ -238,6 +243,7 @@ export default function PrismBreak() {
                 b.status = 0;
                 s.score += 20 * s.level;
                 s.shake = 10;
+                triggerHaptic('tap', { key: 'prism-brick', cooldown: 35 });
                 setUiState(prev => ({ ...prev, score: s.score }));
                 
                 // Explosion particles

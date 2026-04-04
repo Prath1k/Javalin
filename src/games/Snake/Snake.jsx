@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useScores } from '../../ScoreContext';
+import { triggerHaptic } from '../../utils/haptics';
 import './Snake.css';
 
 const GRID_SIZE = 25;
@@ -132,6 +133,7 @@ const Snake = () => {
 
       if (newHead.x === food.x && newHead.y === food.y) {
         setScore((s) => s + 10);
+        triggerHaptic('tap', { key: 'snake-food', cooldown: 45 });
         setFood(getRandomFoodPosition(newSnake));
         spawnParticles(newHead.x, newHead.y);
         setEatFlash(true);
@@ -151,6 +153,7 @@ const Snake = () => {
   }, [gameLoop, score]);
 
   const handleGameOver = () => {
+    triggerHaptic('gameOver', { key: 'snake-over', cooldown: 500 });
     setGameOver(true);
     setShaking(true);
     setTimeout(() => setShaking(false), 500);

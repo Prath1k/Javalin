@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useScores } from '../../ScoreContext';
+import { triggerHaptic } from '../../utils/haptics';
 import './PacMan.css';
 
 const MAP_SRC = [
@@ -201,6 +202,7 @@ export default function PacMan() {
           s.score += 10; s.grid[p.r][p.c] = 0; s.totalPellets--;
         } else if (t === 3) {
           s.score += 50; s.grid[p.r][p.c] = 0; s.totalPellets--;
+          triggerHaptic('success', { key: 'pacman-power-pellet', cooldown: 120 });
           s.frightTimer = 60 * 6; // 6 seconds
           s.ghosts.forEach(g => {
             if (g.mode !== 'eaten' && g.mode !== 'wait' && g.mode !== 'exiting') {
@@ -356,11 +358,17 @@ export default function PacMan() {
         if (g.mode !== 'exiting' && Math.abs(g.x - p.x) < TILE_SIZE*0.8 && Math.abs(g.y - p.y) < TILE_SIZE*0.8) {
           if (g.mode === 'frightened') {
             s.score += 200;
+            triggerHaptic('hit', { key: 'pacman-eat-ghost', cooldown: 100 });
             g.mode = 'eaten';
           } else if (g.mode !== 'eaten') {
             s.lives--;
-            if (s.lives <= 0) s.gameOver = true;
-            else resetEntities();
+            if (s.lives <= 0) {
+              s.gameOver = true;
+              triggerHaptic('gameOver', { key: 'pacman-over', cooldown: 500 });
+            } else {
+              triggerHaptic('danger', { key: 'pacman-damage', cooldown: 300 });
+              resetEntities();
+            }
           }
         }
       });

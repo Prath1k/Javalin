@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useScores } from '../../ScoreContext';
+import { triggerHaptic } from '../../utils/haptics';
 import './SpaceInvaders.css';
 
 const ENEMY_TYPES = ['squid', 'crab', 'octopus', 'ufo'];
@@ -124,6 +125,7 @@ export default function SpaceInvaders() {
 
     const checkOver = () => {
         if(stateRef.current.isGameOver) {
+        triggerHaptic('gameOver', { key: 'space-over', cooldown: 600 });
             updateHighScore('space-invaders', stateRef.current.score);
             setUiState(prev => ({ ...prev, over: true }));
         }
@@ -190,6 +192,7 @@ export default function SpaceInvaders() {
           for (let a of s.aliens) {
             if (a.alive && b.x < a.x+a.width && b.x+b.width > a.x && b.y < a.y+a.height && b.y+b.height > a.y) {
               a.alive = false; hit = true;
+              triggerHaptic('tap', { key: 'space-alien-hit', cooldown: 40 });
               s.score += (a.type==="ufo"?50 : a.type==="squid"?30 : 10);
               for(let k=0; k<8; k++) s.particles.push({
                   x: a.x+14, y: a.y+14, vx: (Math.random()-0.5)*8, vy: (Math.random()-0.5)*8,
@@ -204,6 +207,7 @@ export default function SpaceInvaders() {
         for (let b of s.alienBullets) {
           if (b.x < s.player.x+s.player.width && b.x+b.width > s.player.x && b.y < s.player.y+s.player.height && b.y+b.height > s.player.y) {
             s.isGameOver = true;
+            triggerHaptic('danger', { key: 'space-player-hit', cooldown: 300 });
             for(let k=0; k<20; k++) s.particles.push({
                 x: s.player.x+20, y: s.player.y+10, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
                 life: 1, col: '#00ffcc'

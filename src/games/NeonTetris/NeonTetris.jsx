@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useScores } from '../../ScoreContext';
+import { triggerHaptic } from '../../utils/haptics';
 import './NeonTetris.css';
 
 const COLS = 10;
@@ -49,6 +50,7 @@ export default function NeonTetris() {
     
     if (checkCollision(piece.x, piece.y, piece.shape)) {
       setGameOver(true);
+      triggerHaptic('gameOver', { key: 'tetris-over', cooldown: 500 });
       if (score > highScore) updateHighScore('neon-tetris', score);
     } else {
       setActivePiece(piece);
@@ -146,10 +148,13 @@ export default function NeonTetris() {
     }
 
     if (cleared > 0) {
+      triggerHaptic(cleared >= 3 ? 'success' : 'hit', { key: 'tetris-clear', cooldown: 120 });
       setScore(prev => prev + [0, 100, 300, 500, 1000][cleared] * level);
       setShaking(true);
       setTimeout(() => setShaking(false), 300);
       if (score > 0 && score % 1000 === 0) setLevel(l => l + 1);
+    } else {
+      triggerHaptic('soft', { key: 'tetris-lock', cooldown: 70 });
     }
 
     setGrid(finalGrid);
