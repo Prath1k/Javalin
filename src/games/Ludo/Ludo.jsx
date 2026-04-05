@@ -41,15 +41,14 @@ const YARD_POSITIONS = {
 };
 
 const getGlobalIndex = (seatIndex, steps) => {
-  if (steps < 0 || steps > 56) return null;
-  if (steps >= 52) return null;
+  if (steps < 0 || steps >= 51) return null;
   return (START_OFFSETS[seatIndex] + steps) % 52;
 };
 
 const getTokenGridPos = (color, seatIndex, steps, tokenIndex) => {
   if (steps === 57) return { r: 7, c: 7 };
-  if (steps >= 52) {
-    const homeIdx = steps - 52;
+  if (steps >= 51) {
+    const homeIdx = steps - 51;
     const lane = HOME_LANES[color];
     if (homeIdx < lane.length) return lane[homeIdx];
     return { r: 7, c: 7 };
@@ -112,6 +111,7 @@ export default function Ludo() {
   const [gameState, setGameState] = useState(defaultState);
   const [captureEffect, setCaptureEffect] = useState(null);
   const [diceRolling, setDiceRolling] = useState(false);
+  const [visualDice, setVisualDice] = useState(1);
   const rollTimeoutRef = useRef(null);
   const logEndRef = useRef(null);
 
@@ -162,6 +162,7 @@ export default function Ludo() {
   const rollDice = useCallback(() => {
     if (gameState.phase !== 'PLAY' || !currentSeat || !isMyTurn || gameState.awaitingMove || diceRolling) return;
     setDiceRolling(true);
+    setVisualDice(Math.floor(Math.random() * 6) + 1);
     const roll = Math.floor(Math.random() * 6) + 1;
 
     rollTimeoutRef.current = setTimeout(() => {
@@ -201,6 +202,18 @@ export default function Ludo() {
   useEffect(() => { return () => { if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current); }; }, []);
 
   useEffect(() => {
+    let interval;
+    if (diceRolling) {
+      interval = setInterval(() => {
+        setVisualDice(Math.floor(Math.random() * 6) + 1);
+      }, 70);
+    } else {
+      setVisualDice(gameState.lastRoll?.roll || 1);
+    }
+    return () => clearInterval(interval);
+  }, [diceRolling, gameState.lastRoll?.roll]);
+
+  useEffect(() => {
     if (logEndRef.current) {
       logEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
@@ -220,14 +233,14 @@ export default function Ludo() {
       tokens[currentSeat.id] = playerTokens;
 
       let capturedInfo = null;
-      const targetGlobal = getGlobalIndex(prev.turn, nextSteps);
-      if (targetGlobal !== null && !SAFE_SPOTS.includes(targetGlobal) && nextSteps < 52) {
-        prev.seats.forEach((seat, sIdx) => {
+      const targetGlobal = getGlobalIndex(currentSeat.seat, nextSteps);
+      if (targetGlobal !== null && !SAFE_SPOTS.includes(targetGlobal)) {
+        prev.seats.forEach((seat) => {
           if (seat.id === currentSeat.id) return;
           const oppTokens = tokens[seat.id] ? [...tokens[seat.id]] : [];
           oppTokens.forEach((steps, idx) => {
-            if (steps >= 0 && steps <= 51) {
-              if (getGlobalIndex(sIdx, steps) === targetGlobal) {
+            if (steps >= 0 && steps < 51) {
+              if (getGlobalIndex(seat.seat, steps) === targetGlobal) {
                 oppTokens[idx] = -1;
                 capturedInfo = { color: seat.color, tokenIdx: idx };
               }
@@ -238,13 +251,14 @@ export default function Ludo() {
       }
 
       if (capturedInfo) {
-        const capturedPos = getTokenGridPos(currentSeat.color, prev.turn, nextSteps, tokenIndex);
+        const capturedPos = getTokenGridPos(currentSeat.color, currentSeat.seat, nextSteps, tokenIndex);
         setCaptureEffect({ r: capturedPos.r, c: capturedPos.c, ts: Date.now() });
         setTimeout(() => setCaptureEffect(null), 800);
       }
 
       const finished = tokens[currentSeat.id].every((s) => s >= 57);
-      const extraTurn = roll === 6 && !finished;
+      const reachedHome = nextSteps === 57;
+      const extraTurn = (roll === 6 || reachedHome) && !finished;
       const wasCaptured = capturedInfo !== null;
       let logText = `${currentSeat.name} moved token ${tokenIndex + 1}`;
       if (currentSteps === -1) logText = `${currentSeat.name} entered a token`;
@@ -291,7 +305,7 @@ export default function Ludo() {
   const describeTokenPos = (steps) => {
     if (steps === -1) return 'Yard';
     if (steps === 57) return 'Home';
-    if (steps >= 52) return `Lane ${steps - 51}`;
+    if (steps >= 51) return `Lane ${steps - 50}`;
     return `Track ${steps + 1}`;
   };
 
@@ -351,55 +365,65 @@ export default function Ludo() {
     }
   }
 
-  // Build tokens
+  // Build tokens with global per-cell stacking so overlapping tokens keep clear identity.
   const tokenElements = [];
+  const allTokenPositions = [];
+  const cellStacks = {};
+
   gameState.seats.forEach((seat, sIdx) => {
     const playerTokens = gameState.tokens[seat.id] || [];
-    const posCount = {};
     playerTokens.forEach((steps, tIdx) => {
-      const pos = getTokenGridPos(seat.color, sIdx, steps, tIdx);
-      const key = `${pos.r}-${pos.c}`;
-      if (!posCount[key]) posCount[key] = [];
-      posCount[key].push(tIdx);
+      const pos = getTokenGridPos(seat.color, seat.seat, steps, tIdx);
+      const cellKey = `${pos.r}-${pos.c}`;
+      const tokenKey = `${seat.id}-${tIdx}`;
+      allTokenPositions.push({ seat, sIdx, tIdx, steps, pos, cellKey, tokenKey });
+      if (!cellStacks[cellKey]) cellStacks[cellKey] = [];
+      cellStacks[cellKey].push(tokenKey);
     });
+  });
 
-    playerTokens.forEach((steps, tIdx) => {
-      const pos = getTokenGridPos(seat.color, sIdx, steps, tIdx);
-      const key = `${pos.r}-${pos.c}`;
-      const stackGroup = posCount[key] || [];
-      const stackIdx = stackGroup.indexOf(tIdx);
-      const totalStack = stackGroup.length;
-      const isInteractive = sIdx === gameState.turn && isMyTurn && validForCurrent.includes(tIdx);
-      const isFinished = steps === 57;
-      const offsets = [{x:-30,y:-30},{x:30,y:-30},{x:-30,y:30},{x:30,y:30}];
-      const stackOffset = totalStack > 1 ? offsets[stackIdx % 4] : { x: 0, y: 0 };
+  allTokenPositions.forEach(({ seat, sIdx, tIdx, steps, pos, cellKey, tokenKey }) => {
+    const stackGroup = cellStacks[cellKey] || [];
+    const stackIdx = stackGroup.indexOf(tokenKey);
+    const totalStack = stackGroup.length;
+    const isStacked = totalStack > 1;
+    const playerInitial = seat.name?.[0]?.toUpperCase() || COLOR_NAMES[seat.color]?.[0] || 'P';
+    const isInteractive = sIdx === gameState.turn && isMyTurn && validForCurrent.includes(tIdx);
+    const isFinished = steps === 57;
+    const offsets = [
+      { x: -30, y: -30 }, { x: 30, y: -30 }, { x: -30, y: 30 }, { x: 30, y: 30 },
+      { x: 0, y: -38 }, { x: 0, y: 38 }, { x: -38, y: 0 }, { x: 38, y: 0 }
+    ];
+    const stackOffset = totalStack > 1 ? offsets[stackIdx % offsets.length] : { x: 0, y: 0 };
 
-      tokenElements.push(
-        <div key={`${seat.id}-${tIdx}`}
-          className={`ludo-token ${isInteractive ? 'selectable' : ''} ${isFinished ? 'finished' : ''} color-${seat.color}`}
-          style={{
-            gridRow: pos.r + 1, gridColumn: pos.c + 1,
-            transform: `translate(${stackOffset.x}%, ${stackOffset.y}%)`,
-            zIndex: isInteractive ? 20 : 10,
-          }}
-          onClick={() => isInteractive && handleMove(tIdx)}
-          onKeyDown={(e) => {
-            if (!isInteractive) return;
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleMove(tIdx);
-            }
-          }}
-          role={isInteractive ? 'button' : undefined}
-          tabIndex={isInteractive ? 0 : -1}
-          aria-label={`${COLOR_NAMES[seat.color]} token ${tIdx + 1} ${isInteractive ? 'selectable' : 'not selectable'}`}
-          title={`${COLOR_NAMES[seat.color]} Token ${tIdx + 1}`}
-        >
-          <span className="token-num">{tIdx + 1}</span>
-          {isInteractive && <span className="token-ring" />}
-        </div>
-      );
-    });
+    tokenElements.push(
+      <div key={tokenKey}
+        className={`ludo-token ${isInteractive ? 'selectable' : ''} ${isFinished ? 'finished' : ''} ${isStacked ? 'stacked' : ''} color-${seat.color}`}
+        style={{
+          gridRow: pos.r + 1, gridColumn: pos.c + 1,
+          '--stack-x': `${stackOffset.x}%`,
+          '--stack-y': `${stackOffset.y}%`,
+          transform: `translate(var(--stack-x), var(--stack-y))`,
+          zIndex: isInteractive ? 30 : 10,
+        }}
+        onClick={() => isInteractive && handleMove(tIdx)}
+        onKeyDown={(e) => {
+          if (!isInteractive) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleMove(tIdx);
+          }
+        }}
+        role={isInteractive ? 'button' : undefined}
+        tabIndex={isInteractive ? 0 : -1}
+        aria-label={`${COLOR_NAMES[seat.color]} token ${tIdx + 1} ${isInteractive ? 'selectable' : 'not selectable'}`}
+        title={`${COLOR_NAMES[seat.color]} Token ${tIdx + 1}`}
+      >
+        <span className="token-num">{tIdx + 1}</span>
+        {isStacked && !isFinished && <span className="token-stack-badge">{playerInitial}</span>}
+        {isInteractive && <span className="token-ring" />}
+      </div>
+    );
   });
 
   const winnerSeat = gameState.seats.find(s => s.id === gameState.winner);
@@ -437,7 +461,7 @@ export default function Ludo() {
               <div className={`dice-container ${diceRolling ? 'rolling' : ''} ${isMyTurn && !gameState.awaitingMove && gameState.phase === 'PLAY' && !diceRolling ? 'clickable' : ''}`}
                 onClick={rollDice}>
                 <div className="dice-cube" key={gameState.lastRoll?.ts || 'init'}>
-                  <DiceFace value={gameState.lastRoll?.roll || 1} />
+                  <DiceFace value={visualDice} />
                 </div>
               </div>
               <div className="dice-actions">
@@ -485,8 +509,9 @@ export default function Ludo() {
             {gameState.seats.map((seat, idx) => {
               const tokensHome = (gameState.tokens[seat.id] || []).filter(s => s === 57).length;
               const isActive = idx === gameState.turn && gameState.phase !== 'FINISHED';
+              const isLocalTurn = isActive && seat.id === localPlayerId;
               return (
-                <div key={seat.id} className={`ludo-player-card ${isActive ? 'active' : ''}`}
+                <div key={seat.id} className={`ludo-player-card ${isActive ? 'active' : ''} ${isLocalTurn ? 'local-turn' : ''}`}
                   style={{ '--player-color': COLOR_HEX[seat.color] }}>
                   <div className="player-avatar" style={{ background: COLOR_HEX[seat.color] }}>
                     {seat.name?.[0]?.toUpperCase() || (idx + 1)}
@@ -494,10 +519,19 @@ export default function Ludo() {
                   <div className="player-info">
                     <span className="player-name">{seat.name}</span>
                     <div className="token-progress">
-                      {[0, 1, 2, 3].map(t => (
-                        <span key={t} className={`progress-dot ${(gameState.tokens[seat.id]?.[t] ?? -1) === 57 ? 'home' : (gameState.tokens[seat.id]?.[t] ?? -1) >= 0 ? 'active' : ''}`}
-                          style={{ background: (gameState.tokens[seat.id]?.[t] ?? -1) === 57 ? COLOR_HEX[seat.color] : undefined }} />
-                      ))}
+                      {[0, 1, 2, 3].map(t => {
+                        const tokenSteps = gameState.tokens[seat.id]?.[t] ?? -1;
+                        const isHome = tokenSteps === 57;
+                        const isActive = tokenSteps >= 0 && !isHome;
+                        return (
+                          <span key={t} className={`progress-dot ${isHome ? 'home' : isActive ? 'active' : ''}`}
+                            style={{ 
+                              background: isHome ? COLOR_HEX[seat.color] : isActive ? COLOR_HEX[seat.color] : undefined,
+                              opacity: isActive ? 0.7 : 1,
+                              borderColor: (isHome || isActive) ? COLOR_HEX[seat.color] : undefined
+                            }} />
+                        );
+                      })}
                     </div>
                   </div>
                   {isActive && <span className="turn-indicator">◀</span>}
