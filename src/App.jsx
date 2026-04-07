@@ -820,7 +820,29 @@ export default function App() {
               </button>
             </form>
 
-            <div style={{ textAlign: 'center', marginTop: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', gap: '12px', opacity: 0.6 }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+              <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>OR</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+            </div>
+
+            <button 
+              type="button" 
+              onClick={handleGoogleSignIn}
+              disabled={authLoading}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
+                width: '100%', padding: '12px', backgroundColor: 'transparent', 
+                color: 'var(--text-primary)', border: '1px solid var(--border-strong)', 
+                borderRadius: '12px', fontWeight: 600, fontSize: '0.95rem', 
+                cursor: 'pointer', transition: 'all 0.2s'
+              }}
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
+              Continue with Google
+            </button>
+
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
               <button 
                 onClick={() => setIsSignUp(!isSignUp)}
                 style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem' }}
