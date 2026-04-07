@@ -1,0 +1,292 @@
+.retro-racer-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #0b0c10;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+  color: #fff;
+}
+
+.retro-racer-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+/* UI Overlay */
+.retro-racer-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* HUD Info */
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.hud-score {
+  text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 0, 255, 0.5);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.3) inset;
+}
+
+/* New Dash Layout for Gauges */
+.hud-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2) inset, 0 0 10px rgba(0, 0, 0, 0.8);
+  min-width: 250px;
+}
+
+.gauge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gauge-label {
+  font-size: 0.8rem;
+  color: #fff;
+  width: 60px;
+  text-shadow: 0 0 5px #fff;
+}
+
+.gauge-bar-bg {
+  flex: 1;
+  height: 20px;
+  background: #111;
+  border: 2px solid #333;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  width: 0%; /* updated by js */
+  transition: width 0.1s linear, background-color 0.2s;
+}
+
+.gauge-fill.speed {
+  background: linear-gradient(90deg, #00ffff, #0088ff);
+  box-shadow: 0 0 10px #00ffff;
+}
+.gauge-fill.speed.max {
+  background: linear-gradient(90deg, #ff8800, #ff0000);
+  box-shadow: 0 0 10px #ff0000;
+  animation: pulse-red 0.2s infinite alternate;
+}
+
+.gauge-fill.nitro {
+  background: linear-gradient(90deg, #ff00ff, #ff0088);
+  box-shadow: 0 0 10px #ff00ff;
+}
+.gauge-fill.nitro.ready {
+  background: linear-gradient(90deg, #fff, #ff00ff);
+  box-shadow: 0 0 20px #ff00ff;
+  animation: pulse-pink 0.5s infinite alternate;
+}
+
+@keyframes pulse-red {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse-pink {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.5); }
+}
+
+/* Screens */
+.screen-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(11, 12, 16, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.title-text {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  color: #fff;
+  text-transform: uppercase;
+  font-style: italic;
+  background: linear-gradient(to bottom, #cfd8dc 0%, #ffffff 40%, #c0c0c0 50%, #4dd0e1 51%, #00bcd4 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 15px rgba(0, 188, 212, 0.8));
+  text-align: center;
+}
+
+.title-wrapper {
+  position: relative;
+  margin-bottom: 30px;
+}
+.title-wrapper::before {
+  content: "OUTWAVE";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  font-size: 4rem;
+  font-style: italic;
+  color: transparent;
+  -webkit-text-stroke: 4px #e91e63;
+  z-index: -1;
+  filter: drop-shadow(0 0 10px #e91e63);
+}
+
+.retro-btn {
+  background: transparent;
+  border: 2px solid #00ffff;
+  color: #00ffff;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2), inset 0 0 10px rgba(0, 255, 255, 0.1);
+  text-shadow: 0 0 5px #00ffff;
+  margin: 10px;
+}
+
+.retro-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 15px rgba(0, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.instructions {
+  margin-top: 30px;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.5;
+  font-family: sans-serif;
+}
+
+.key {
+  display: inline-block;
+  background: #2a2a35;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-bottom: 2px solid #111;
+  font-family: monospace;
+  margin: 0 4px;
+}
+
+.game-over-text {
+  font-size: 3rem;
+  color: #ff003c;
+  text-shadow: 0 0 20px #ff003c, 0 0 40px #ff003c;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.final-stats {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+  color: #fff;
+  text-align: center;
+}
+.final-stats .highlight {
+  color: #00ffff;
+  text-shadow: 0 0 10px #00ffff;
+  font-size: 2rem;
+  display: block;
+  margin-top: 10px;
+}
+
+/* Mobile Controls */
+.mobile-controls {
+  display: none;
+  position: absolute;
+  bottom: 30px;
+  left: 0;
+  width: 100%;
+  padding: 0 20px;
+  box-sizing: border-box;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-controls {
+    display: flex;
+  }
+}
+
+.d-pad, .action-buttons {
+  display: flex;
+  gap: 15px;
+  pointer-events: auto;
+}
+
+.control-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(0, 255, 255, 0.5);
+  color: rgba(0, 255, 255, 0.8);
+  font-size: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) inset;
+}
+
+.control-btn:active {
+  background: rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.6) inset;
+  transform: scale(0.95);
+}
+
+.control-btn.nitro-btn {
+  border-color: #ff00ff;
+  color: #ff00ff;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.2) inset;
+}
+.control-btn.nitro-btn:active {
+  background: rgba(255, 0, 255, 0.3);
+  box-shadow: 0 0 25px rgba(255, 0, 255, 0.6) inset;
+}

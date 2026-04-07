@@ -28,6 +28,7 @@ import OrbitRoyale from './games/OrbitRoyale/OrbitRoyale';
 import VectorRace from './games/VectorRace/VectorRace';
 import InfectionTag from './games/InfectionTag/InfectionTag';
 import SnakesAndLadders from './games/SnakesAndLadders/SnakesAndLadders';
+import RetroRacer from './games/RetroRacer/RetroRacer';
 
 // ── Theme Assets ─────────────────────────────────────────────
 import logoLight from './assets/logo-light.png';
@@ -287,6 +288,16 @@ const GAMES = [
     icon: '🐍',
     image: null,
     component: SnakesAndLadders,
+    status: 'active',
+  },
+  {
+    id: 'retro-racer',
+    title: 'Outwave Racer',
+    genre: 'Racing / Retro',
+    desc: 'A classic pseudo-3D outrun style arcade racing game with synthwave aesthetic.',
+    icon: '🏎️',
+    image: null,
+    component: RetroRacer,
     status: 'active',
   },
 ];
