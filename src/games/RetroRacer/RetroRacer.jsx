@@ -59,7 +59,7 @@ class RetroRacerScene extends Phaser.Scene {
             timeElapsed: 0
         };
 
-        this.bridge = this.registry.get('bridge');
+        this.bridge = null;
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keys = this.input.keyboard.addKeys('W,A,S,D,SPACE');
         this.gameState = 'START';
@@ -231,11 +231,12 @@ class RetroRacerScene extends Phaser.Scene {
         }
     }
 
-    drawScenery(sprite, scale, destX, destY) {
+    drawScenery(sprite, scale, destX, destY, width) {
+        const s = scale * width / 2;
         const type = sprite.source;
         if (type === 'palm') {
-            const h = 200 * scale;
-            const w = 50 * scale;
+            const h = 200 * s;
+            const w = 50 * s;
             this.drawPolygon(destX-w/4, destY, destX-w/8, destY-h, destX+w/8, destY-h, destX+w/4, destY, 0x550055);
             this.graphics.fillStyle(0x00ffff, 1); // neon leaves
             this.graphics.beginPath();
@@ -245,15 +246,15 @@ class RetroRacerScene extends Phaser.Scene {
             this.graphics.lineTo(destX+w, destY-h+w);
             this.graphics.fillPath();
         } else if (type === 'pyramid') {
-            const w = 300 * scale;
-            const h = 150 * scale;
+            const w = 300 * s;
+            const h = 150 * s;
             this.drawPolygon(destX-w/2, destY, destX, destY-h, destX, destY-h, destX+w/2, destY, 0xff00ff);
             // wireframe
             this.graphics.lineStyle(2, 0x00ffff, 1);
             this.graphics.strokeTriangle(destX-w/2, destY, destX, destY-h, destX+w/2, destY);
         } else if (type === 'sign') {
-            const w = 100 * scale;
-            const h = 100 * scale;
+            const w = 100 * s;
+            const h = 100 * s;
             this.graphics.fillStyle(0x333333, 1);
             this.graphics.fillRect(destX-w*0.1, destY-h, w*0.2, h); // post
             this.graphics.fillStyle(0xff00ff, 1);
@@ -264,8 +265,9 @@ class RetroRacerScene extends Phaser.Scene {
     }
 
     drawSprite(width, height, resolution, roadWidth, scale, destX, destY, color, steer) {
-        const cw = 80 * scale; 
-        const ch = 40 * scale; 
+        const s = scale * width / 2;
+        const cw = 80 * s; 
+        const ch = 40 * s; 
         const cx = destX;
         const cy = destY;
         
@@ -283,20 +285,21 @@ class RetroRacerScene extends Phaser.Scene {
 
         // Tires
         this.graphics.fillStyle(0x000000, 1);
-        this.graphics.fillRect(cx - cw/2 - 5*scale, cy - 10*scale, 10*scale, 20*scale);
-        this.graphics.fillRect(cx + cw/2 - 5*scale, cy - 10*scale, 10*scale, 20*scale);
+        this.graphics.fillRect(cx - cw/2 - 5*s, cy - 10*s, 10*s, 20*s);
+        this.graphics.fillRect(cx + cw/2 - 5*s, cy - 10*s, 10*s, 20*s);
         
         // Tail lights
         this.graphics.fillStyle(0xff0000, 1);
-        this.graphics.fillRect(cx - cw*0.4, cy - ch*0.4, 15*scale, 5*scale);
-        this.graphics.fillRect(cx + cw*0.4 - 15*scale, cy - ch*0.4, 15*scale, 5*scale);
+        this.graphics.fillRect(cx - cw*0.4, cy - ch*0.4, 15*s, 5*s);
+        this.graphics.fillRect(cx + cw*0.4 - 15*s, cy - ch*0.4, 15*s, 5*s);
     }
 
     drawPlayer(width, height, resolution, roadWidth, speedPercent, scale, destX, destY, steer, isAccelerating, isBoosting) {
+        const s = scale * width / 2;
         let bounce = (1.5 * Math.random() * speedPercent * resolution) * randomChoice([-1, 1]);
         if (isBoosting) bounce *= 2;
-        const cw = 120 * scale;
-        const ch = 40 * scale;
+        const cw = 120 * s;
+        const ch = 40 * s;
         const cx = destX;
         const cy = destY - ch/2 + bounce;
 
@@ -316,27 +319,27 @@ class RetroRacerScene extends Phaser.Scene {
 
         // Tires
         this.graphics.fillStyle(0x000000, 1);
-        this.graphics.fillRect(cx - cw/2 - 10*scale, cy, 20*scale, 20*scale);
-        this.graphics.fillRect(cx + cw/2 - 10*scale, cy, 20*scale, 20*scale);
+        this.graphics.fillRect(cx - cw/2 - 10*s, cy, 20*s, 20*s);
+        this.graphics.fillRect(cx + cw/2 - 10*s, cy, 20*s, 20*s);
 
         // Tail lights
         const isBraking = this.cursors.down.isDown || this.keys.S.isDown || this.mobileInput.down;
         this.graphics.fillStyle(isBraking ? 0xff0000 : 0xcc0000, 1);
-        this.graphics.fillRect(cx - cw/2 + 5*scale, cy - ch/2, 25*scale, 10*scale);
-        this.graphics.fillRect(cx + cw/2 - 30*scale, cy - ch/2, 25*scale, 10*scale);
+        this.graphics.fillRect(cx - cw/2 + 5*s, cy - ch/2, 25*s, 10*s);
+        this.graphics.fillRect(cx + cw/2 - 30*s, cy - ch/2, 25*s, 10*s);
 
         // Exhaust Flames (Only if accelerating)
         if (isAccelerating && speedPercent > 0.1) {
-            const fx = cx - cw/2 + 10*scale;
-            const fx2 = cx + cw/2 - 20*scale;
-            const fy = cy + 5*scale;
+            const fx = cx - cw/2 + 10*s;
+            const fx2 = cx + cw/2 - 20*s;
+            const fy = cy + 5*s;
             
             this.graphics.fillStyle(isBoosting ? 0x00ccff : 0xffaa00, Math.random() * 0.5 + 0.5); // blue if boosting, orange if normal
-            const flameLen = isBoosting ? 60*scale : 30 * scale * Math.random();
+            const flameLen = isBoosting ? 60*s : 30 * s * Math.random();
             // Left exahust
-            this.drawPolygon(fx, fy, fx+10*scale, fy, fx+5*scale, fy + flameLen, fx+5*scale, fy + flameLen, isBoosting ? 0x00ccff : 0xffaa00);
+            this.drawPolygon(fx, fy, fx+10*s, fy, fx+5*s, fy + flameLen, fx+5*s, fy + flameLen, isBoosting ? 0x00ccff : 0xffaa00);
             // Right exhaust
-            this.drawPolygon(fx2, fy, fx2+10*scale, fy, fx2+5*scale, fy + flameLen, fx2+5*scale, fy + flameLen, isBoosting ? 0x00ccff : 0xffaa00);
+            this.drawPolygon(fx2, fy, fx2+10*s, fy, fx2+5*s, fy + flameLen, fx2+5*s, fy + flameLen, isBoosting ? 0x00ccff : 0xffaa00);
         }
     }
 
@@ -400,6 +403,10 @@ class RetroRacerScene extends Phaser.Scene {
         state.speed = Math.max(0, Math.min(state.maxSpeed, state.speed));
 
         // Score Syncing via Bridge
+        if (!this.bridge) {
+            this.bridge = this.registry.get('bridge');
+        }
+        
         if (state.speed > 0) {
             state.score += (state.speed * dt * 0.1);
         }
@@ -510,7 +517,7 @@ class RetroRacerScene extends Phaser.Scene {
                 let spriteY = segment.p1.screen.y;
                 
                 if (spriteY < segment.clip) {
-                    this.drawScenery(sprite, spriteScale, spriteX, spriteY);
+                    this.drawScenery(sprite, spriteScale, spriteX, spriteY, width);
                 }
             }
 
@@ -629,14 +636,14 @@ const RetroRacer = () => {
 
   const startGameFn = () => {
       setGameState('PLAYING');
-      const scene = gameRef.current.scene.scenes[0];
+      const scene = gameRef.current?.scene?.getScene('RetroRacerScene') || (gameRef.current?.scene?.scenes && gameRef.current.scene.scenes[0]);
       if (scene) {
           scene.events.emit('START_GAME');
       }
   };
 
   const handleMobileInput = (dir, val) => {
-      const scene = gameRef.current?.scene.scenes[0];
+      const scene = gameRef.current?.scene?.getScene('RetroRacerScene') || (gameRef.current?.scene?.scenes && gameRef.current.scene.scenes[0]);
       if (scene) {
           scene.events.emit('UPDATE_INPUT', { [dir]: val });
       }
