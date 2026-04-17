@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { getBestMove, getSmartHint } from './ai';
 import { Piece } from './Pieces';
@@ -32,6 +32,141 @@ const formatClock = (seconds) => {
   return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 };
 
+/* ── Checkmate Replay Mini-Board ── */
+const CheckmateReplay = ({ beforeFen, afterFen, lastMove }) => {
+  const [showAfter, setShowAfter] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => setShowAfter(prev => !prev), 1200);
+    return () => clearInterval(interval);
+  }, []);
+
+  const replayChess = useMemo(() => {
+    const c = new Chess();
+    c.load(showAfter ? afterFen : beforeFen);
+    return c;
+  }, [showAfter, afterFen, beforeFen]);
+
+  const replayBoard = replayChess.board();
+  const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+  return (
+    <div className="replay-container">
+      <div className="replay-label">{showAfter ? '✦ Checkmate Position' : '⟵ Before Final Move'}</div>
+      <div className="replay-board">
+        {replayBoard.map((row, r) =>
+          row.map((piece, c) => {
+            const sq = files[c] + ranks[r];
+            const isLight = (r + c) % 2 === 0;
+            const isFrom = lastMove && sq === lastMove.from && !showAfter;
+            const isTo = lastMove && sq === lastMove.to && showAfter;
+            let cls = `replay-square ${isLight ? 'light' : 'dark'}`;
+            if (isFrom) cls += ' replay-highlight-from';
+            if (isTo) cls += ' replay-highlight-to';
+            return (
+              <div key={`${r}-${c}`} className={cls}>
+                {piece && <Piece type={piece.type} color={piece.color} className="replay-piece" />}
+              </div>
+            );
+          })
+        )}
+      </div>
+      <div className="replay-move-badge">
+        {lastMove ? `${lastMove.san}` : ''}
+      </div>
+    </div>
+  );
+};
+
+/* ── Game Report Modal ── */
+const GameReportModal = ({ moveHistory, gameResult, whiteTimeLeft, blackTimeLeft, timeControl: tc, onClose, beforeFen, afterFen, lastMoveData }) => {
+  const whiteMoves = moveHistory.filter(m => m.color === 'w');
+  const blackMoves = moveHistory.filter(m => m.color === 'b');
+  const whiteCaptures = whiteMoves.filter(m => m.captured);
+  const blackCaptures = blackMoves.filter(m => m.captured);
+  const whiteChecks = whiteMoves.filter(m => m.san.includes('+') || m.san.includes('#'));
+  const blackChecks = blackMoves.filter(m => m.san.includes('+') || m.san.includes('#'));
+  const whiteCastled = whiteMoves.some(m => m.flags.includes('k') || m.flags.includes('q'));
+  const blackCastled = blackMoves.some(m => m.flags.includes('k') || m.flags.includes('q'));
+  const whitePromotions = whiteMoves.filter(m => m.promotion);
+  const blackPromotions = blackMoves.filter(m => m.promotion);
+
+  const pieceNames = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' };
+  const getCaptureList = (caps) => {
+    const counts = {};
+    caps.forEach(m => {
+      const name = pieceNames[m.captured] || m.captured;
+      counts[name] = (counts[name] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => `${count}×${name}`).join(', ') || 'None';
+  };
+
+  const isCheckmate = gameResult.includes('Checkmate');
+
+  return (
+    <div className="report-overlay" onClick={onClose}>
+      <div className="report-modal" onClick={e => e.stopPropagation()}>
+        <button className="report-close" onClick={onClose}>✕</button>
+        <h2 className="report-title">Game Report</h2>
+        <div className="report-result">{gameResult}</div>
+
+        {isCheckmate && lastMoveData && beforeFen && afterFen && (
+          <CheckmateReplay beforeFen={beforeFen} afterFen={afterFen} lastMove={lastMoveData} />
+        )}
+
+        <div className="report-grid">
+          <div className="report-player-card white-card">
+            <div className="report-player-icon">♔</div>
+            <h3>White</h3>
+            <div className="report-stats">
+              <div className="stat-row"><span>Moves</span><strong>{whiteMoves.length}</strong></div>
+              <div className="stat-row"><span>Captures</span><strong>{whiteCaptures.length}</strong></div>
+              <div className="stat-row"><span>Checks Given</span><strong>{whiteChecks.length}</strong></div>
+              <div className="stat-row"><span>Castled</span><strong>{whiteCastled ? '✅' : '❌'}</strong></div>
+              <div className="stat-row"><span>Promotions</span><strong>{whitePromotions.length}</strong></div>
+              {tc !== 'off' && <div className="stat-row"><span>Time Left</span><strong>{formatClock(whiteTimeLeft)}</strong></div>}
+            </div>
+            <div className="report-captures-label">Captured Pieces</div>
+            <div className="report-captures-list">{getCaptureList(whiteCaptures)}</div>
+          </div>
+
+          <div className="report-player-card black-card">
+            <div className="report-player-icon">♚</div>
+            <h3>Black</h3>
+            <div className="report-stats">
+              <div className="stat-row"><span>Moves</span><strong>{blackMoves.length}</strong></div>
+              <div className="stat-row"><span>Captures</span><strong>{blackCaptures.length}</strong></div>
+              <div className="stat-row"><span>Checks Given</span><strong>{blackChecks.length}</strong></div>
+              <div className="stat-row"><span>Castled</span><strong>{blackCastled ? '✅' : '❌'}</strong></div>
+              <div className="stat-row"><span>Promotions</span><strong>{blackPromotions.length}</strong></div>
+              {tc !== 'off' && <div className="stat-row"><span>Time Left</span><strong>{formatClock(blackTimeLeft)}</strong></div>}
+            </div>
+            <div className="report-captures-label">Captured Pieces</div>
+            <div className="report-captures-list">{getCaptureList(blackCaptures)}</div>
+          </div>
+        </div>
+
+        <div className="report-movelog">
+          <h4>Full Move Log</h4>
+          <div className="movelog-list">
+            {moveHistory.map((m, i) => (
+              <span key={i} className={`movelog-entry ${m.color === 'w' ? 'white-move' : 'black-move'}`}>
+                {m.color === 'w' ? `${Math.floor(i / 2) + 1}. ` : ''}{m.san}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="report-total">Total Moves: {moveHistory.length} · Game Duration: {moveHistory.length} half-moves</div>
+
+        <button className="report-play-again" onClick={onClose}>Got It</button>
+      </div>
+    </div>
+  );
+};
+
+/* ── Main Chess Component ── */
 const ChessGame = () => {
   const [chess] = useState(() => new Chess());
   const [board, setBoard] = useState(chess.board());
@@ -54,6 +189,13 @@ const ChessGame = () => {
   const [playerColor, setPlayerColor] = useState('w');
   const [onlineStatus, setOnlineStatus] = useState('disconnected');
 
+  // Move history & report state
+  const [moveHistory, setMoveHistory] = useState([]);
+  const [showReport, setShowReport] = useState(false);
+  const [beforeCheckmateFen, setBeforeCheckmateFen] = useState(null);
+  const [afterCheckmateFen, setAfterCheckmateFen] = useState(null);
+  const [lastMoveData, setLastMoveData] = useState(null);
+
   const channelRef = useRef(null);
   const undoStackRef = useRef([]);
   const redoStackRef = useRef([]);
@@ -73,20 +215,26 @@ const ChessGame = () => {
     setBoard(chess.board());
 
     if (chess.isCheckmate()) {
-      setStatus(`Checkmate! ${chess.turn() === 'w' ? 'Black' : 'White'} wins.`);
+      const resultText = `Checkmate! ${chess.turn() === 'w' ? 'Black' : 'White'} wins.`;
+      setStatus(resultText);
+      setAfterCheckmateFen(chess.fen());
       setGameOver(true);
+      // Auto-show the report after a brief delay
+      setTimeout(() => setShowReport(true), 600);
       return;
     }
 
     if (chess.isDraw()) {
       setStatus('Game Over - Draw');
       setGameOver(true);
+      setTimeout(() => setShowReport(true), 600);
       return;
     }
 
     if (chess.isStalemate()) {
       setStatus('Game Over - Stalemate');
       setGameOver(true);
+      setTimeout(() => setShowReport(true), 600);
       return;
     }
 
@@ -124,6 +272,9 @@ const ChessGame = () => {
       pushHistorySnapshot();
     }
 
+    // Save FEN before the move for checkmate replay
+    const fenBefore = chess.fen();
+
     const move = chess.move(moveObj);
     if (!move) {
       if (recordHistory) {
@@ -131,6 +282,22 @@ const ChessGame = () => {
       }
       return false;
     }
+
+    // Record move in history
+    setMoveHistory(prev => [...prev, {
+      san: move.san,
+      from: move.from,
+      to: move.to,
+      color: move.color,
+      captured: move.captured || null,
+      flags: move.flags,
+      promotion: move.promotion || null,
+      piece: move.piece,
+    }]);
+
+    // Store before-fen and last move data for checkmate replay
+    setBeforeCheckmateFen(fenBefore);
+    setLastMoveData({ san: move.san, from: move.from, to: move.to, color: move.color });
 
     setSelectedSquare(null);
     setValidMoves([]);
@@ -245,6 +412,11 @@ const ChessGame = () => {
     setStatus('White to move');
     setGameOver(false);
     setBoard(chess.board());
+    setMoveHistory([]);
+    setShowReport(false);
+    setBeforeCheckmateFen(null);
+    setAfterCheckmateFen(null);
+    setLastMoveData(null);
   }, [chess, clearAiTimeout, timeControl]);
 
   const undoMove = useCallback(() => {
@@ -681,12 +853,31 @@ const ChessGame = () => {
         {gameOver && (
           <div className="chess-game-over">
             <h3>{gameOverTitle}</h3>
-            <button className="reset-btn" onClick={() => resetGame()}>
-              Play Again
-            </button>
+            <div className="game-over-buttons">
+              <button className="reset-btn" onClick={() => setShowReport(true)}>
+                View Report
+              </button>
+              <button className="reset-btn secondary" onClick={() => resetGame()}>
+                Play Again
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {showReport && (
+        <GameReportModal
+          moveHistory={moveHistory}
+          gameResult={status}
+          whiteTimeLeft={whiteTime}
+          blackTimeLeft={blackTime}
+          timeControl={timeControl}
+          onClose={() => setShowReport(false)}
+          beforeFen={beforeCheckmateFen}
+          afterFen={afterCheckmateFen}
+          lastMoveData={lastMoveData}
+        />
+      )}
     </div>
   );
 };
