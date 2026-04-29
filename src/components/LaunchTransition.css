@@ -1,0 +1,90 @@
+/* LaunchTransition.css */
+
+.launch-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000; /* Must be on top of everything */
+  display: flex;
+  pointer-events: auto; /* Block clicks during transition */
+  overflow: hidden;
+}
+
+.wipe-panel {
+  flex: 1;
+  background-color: var(--bg-base); /* Or a solid dark tech color like #0a0a0b */
+  height: 100%;
+  transform: scaleY(0);
+  transform-origin: center;
+}
+
+/* 
+  We use multiple panels to create a "shutter" or digital wipe effect.
+  We animate them scaling up from the center to cover the screen.
+*/
+
+.launch-transition-overlay.animating .wipe-panel:nth-child(1) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.0s;
+}
+.launch-transition-overlay.animating .wipe-panel:nth-child(2) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.05s;
+}
+.launch-transition-overlay.animating .wipe-panel:nth-child(3) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.1s;
+}
+.launch-transition-overlay.animating .wipe-panel:nth-child(4) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.15s;
+}
+.launch-transition-overlay.animating .wipe-panel:nth-child(5) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.2s;
+}
+
+
+@keyframes wipeIn {
+  0% {
+    transform: scaleY(0);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* Optional closing wipe */
+.launch-transition-overlay.closing .wipe-panel {
+  transform: scaleY(1);
+  transform-origin: center;
+}
+
+.launch-transition-overlay.closing .wipe-panel:nth-child(1) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.0s;
+}
+.launch-transition-overlay.closing .wipe-panel:nth-child(2) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.05s;
+}
+.launch-transition-overlay.closing .wipe-panel:nth-child(3) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.1s;
+}
+.launch-transition-overlay.closing .wipe-panel:nth-child(4) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.15s;
+}
+.launch-transition-overlay.closing .wipe-panel:nth-child(5) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes wipeOut {
+  0% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0);
+  }
+}

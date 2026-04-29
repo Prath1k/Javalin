@@ -71,8 +71,8 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // Connect to Node.js backend
-    // Assuming backend is running locally on port 3001
-    const serverUrl = 'http://localhost:3001';
+    // Use environment variable for production, fallback to localhost for dev
+    const serverUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
     this.socket = io(serverUrl);
 
     this.socket.on('connect', () => {

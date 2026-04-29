@@ -4,6 +4,10 @@ import { supabase } from './supabaseClient';
 import { ScoreProvider, useScores } from './ScoreContext';
 import Leaderboard from './Leaderboard';
 
+import AmbientBackground from './components/AmbientBackground';
+import './components/LaunchTransition.css';
+import { playHoverTick, playClick, playLaunchSweep, hapticFeedback } from './utils/audio';
+
 import BottleSpin from './games/BottleSpin/BottleSpin';
 import Snake from './games/Snake/Snake';
 import MemoryMatch from './games/MemoryMatch/MemoryMatch';
@@ -308,7 +312,14 @@ const Icon = ({ name, className = '' }) => (
 );
 
 // ── Sidebar ────────────────────────────────────────────────
-function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, user, onSignIn, onSignOut, onSettings, theme, isOpen, onClose }) {
+function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, user, onSignIn, onSignOut, onSettings, theme, isOpen, onClose, soundEnabled }) {
+  const handleHover = () => playHoverTick(soundEnabled);
+  const withSound = (fn) => (e) => {
+    playClick(soundEnabled);
+    hapticFeedback(10, soundEnabled);
+    if (fn) fn(e);
+  };
+
   return (
     <>
       {/* Overlay for mobile */}
@@ -332,14 +343,16 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
         <nav className="nav-menu">
           <div
             className={`nav-item ${activeTab === 'hub' && !activeGame ? 'active' : ''}`}
-            onClick={onHome}
+            onClick={withSound(onHome)}
+            onMouseEnter={handleHover}
           >
             <Icon name="dashboard" className="nav-icon" />
             Game Hub
           </div>
           <div
             className={`nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`}
-            onClick={() => { onTabChange('leaderboard'); onClose?.(); }}
+            onClick={withSound(() => { onTabChange('leaderboard'); onClose?.(); })}
+            onMouseEnter={handleHover}
           >
             <Icon name="leaderboard" className="nav-icon" />
             Global Ranks
@@ -355,7 +368,8 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
             <div
               key={game.id}
               className={`nav-item ${activeGame?.id === game.id ? 'active' : ''}`}
-              onClick={() => onSelectGame(game)}
+              onClick={withSound(() => onSelectGame(game))}
+              onMouseEnter={handleHover}
             >
               <Icon name="play_circle" className="nav-icon" />
               {game.title}
@@ -382,11 +396,11 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
-              <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }} onClick={onSettings}>
+              <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }} onClick={withSound(onSettings)} onMouseEnter={handleHover}>
                 <Icon name="settings" className="nav-icon" />
                 Settings
               </div>
-              <div className="nav-item" style={{ paddingLeft: 0 }} onClick={onSignOut}>
+              <div className="nav-item" style={{ paddingLeft: 0 }} onClick={withSound(onSignOut)} onMouseEnter={handleHover}>
                 <Icon name="logout" className="nav-icon" />
                 Sign Out
               </div>
@@ -394,7 +408,7 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
           </>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', paddingBottom: '24px' }}>
-            <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }} onClick={onSettings}>
+            <div className="nav-item" style={{ paddingLeft: 0, marginTop: 8 }} onClick={withSound(onSettings)} onMouseEnter={handleHover}>
               <Icon name="settings" className="nav-icon" />
               Settings
             </div>
@@ -405,7 +419,7 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
               border: 'none', borderRadius: '8px', 
               fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
               boxShadow: '0 4px 12px var(--accent-dim)'
-            }} onClick={onSignIn} className="sign-in-btn">
+            }} onClick={withSound(onSignIn)} onMouseEnter={handleHover} className="sign-in-btn">
               <Icon name="login" style={{ color: '#000', fontSize: '18px' }} />
               Sign In
             </button>
@@ -418,11 +432,18 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
 }
 
 // ── Topbar ─────────────────────────────────────────────────
-function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onHome, theme, onToggleTheme, onToggleSidebar }) {
+function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onHome, theme, soundEnabled, onToggleTheme, onToggleSound, onToggleSidebar }) {
+  const handleHover = () => playHoverTick(soundEnabled);
+  const withSound = (fn) => (e) => {
+    playClick(soundEnabled);
+    hapticFeedback(10, soundEnabled);
+    if (fn) fn(e);
+  };
+
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button className="topbar-btn menu-toggle" onClick={onToggleSidebar}>
+        <button className="topbar-btn menu-toggle" onClick={withSound(onToggleSidebar)} onMouseEnter={handleHover}>
           <Icon name="menu" />
         </button>
         <div className="page-title">
@@ -443,7 +464,8 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
           <div className="topbar-tabs">
             <div
               className={`topbar-tab ${activeTab === 'hub' ? 'active' : ''}`}
-              onClick={onHome}
+              onClick={withSound(onHome)}
+              onMouseEnter={handleHover}
             >
               All Experiences
             </div>
@@ -462,10 +484,13 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
             />
           </div>
         )}
-        <button className="topbar-btn theme-toggle" onClick={onToggleTheme}>
+        <button className="topbar-btn theme-toggle" onClick={withSound(onToggleSound)} onMouseEnter={handleHover}>
+          <Icon name={soundEnabled ? 'volume_up' : 'volume_off'} />
+        </button>
+        <button className="topbar-btn theme-toggle" onClick={withSound(onToggleTheme)} onMouseEnter={handleHover}>
           <Icon name={theme === 'dark' ? 'light_mode' : 'dark_mode'} />
         </button>
-        <button className="topbar-btn">
+        <button className="topbar-btn" onMouseEnter={handleHover}>
           <Icon name="tune" />
         </button>
       </div>
@@ -474,9 +499,10 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
 }
 
 // ── Game Card ───────────────────────────────────────────────
-function GameCard({ game, onClick }) {
+function GameCard({ game, onClick, soundEnabled }) {
+  const handleHover = () => playHoverTick(soundEnabled);
   return (
-    <div className="game-card" onClick={() => onClick(game)}>
+    <div className="game-card" onClick={() => onClick(game)} onMouseEnter={handleHover}>
       <div className="game-card-thumb">
         {game.image ? (
           <img src={game.image} alt={game.title} className="game-card-image" />
@@ -496,7 +522,7 @@ function GameCard({ game, onClick }) {
 }
 
 // ── Hub View ────────────────────────────────────────────────
-function HubView({ onSelectGame, searchQuery }) {
+function HubView({ onSelectGame, searchQuery, soundEnabled }) {
   const filtered = useMemo(() => {
     if (!searchQuery) return GAMES;
     const q = searchQuery.toLowerCase();
@@ -526,7 +552,7 @@ function HubView({ onSelectGame, searchQuery }) {
           )}
 
           {filtered.map(game => (
-            <GameCard key={game.id} game={game} onClick={onSelectGame} />
+            <GameCard key={game.id} game={game} onClick={onSelectGame} soundEnabled={soundEnabled} />
           ))}
           {/* Import slot */}
           <div className="game-card game-card-add">
@@ -625,6 +651,9 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [transitionState, setTransitionState] = useState('idle'); // idle, animating, closing
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -706,10 +735,21 @@ export default function App() {
 
   const handleSelectGame = (game) => {
     if (game.status === 'active') {
-      setActiveGame(game);
-      setIsFullscreen(false);
-      setActiveTab('hub');
-      setSidebarOpen(false); // Close sidebar on mobile
+      playLaunchSweep(soundEnabled);
+      hapticFeedback(20, soundEnabled);
+      setTransitionState('animating');
+      
+      setTimeout(() => {
+        setActiveGame(game);
+        setIsFullscreen(false);
+        setActiveTab('hub');
+        setSidebarOpen(false); // Close sidebar on mobile
+        setTransitionState('closing');
+        
+        setTimeout(() => {
+          setTransitionState('idle');
+        }, 600); // Wait for closing animation to finish
+      }, 600); // Wait for opening animation to cover screen
     }
   };
 
@@ -728,6 +768,16 @@ export default function App() {
 
   return (
     <ScoreProvider user={user}>
+      <AmbientBackground />
+      {transitionState !== 'idle' && (
+        <div className={`launch-transition-overlay ${transitionState}`}>
+          <div className="wipe-panel"></div>
+          <div className="wipe-panel"></div>
+          <div className="wipe-panel"></div>
+          <div className="wipe-panel"></div>
+          <div className="wipe-panel"></div>
+        </div>
+      )}
       <div className="app-layout">
         {!isFullscreen && (
           <Sidebar
@@ -738,6 +788,7 @@ export default function App() {
             onTabChange={handleTabChange}
             theme={theme}
             user={user}
+            soundEnabled={soundEnabled}
             onSignIn={() => { setAuthError(''); setShowLoginModal(true); }}
             onSignOut={handleSignOut}
             onSettings={() => setShowSettingsModal(true)}
@@ -756,7 +807,9 @@ export default function App() {
             onSearch={setSearchQuery}
             onHome={handleHome}
             theme={theme}
+            soundEnabled={soundEnabled}
             onToggleTheme={toggleTheme}
+            onToggleSound={() => { playClick(); setSoundEnabled(s => !s); }}
             onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
           />
         )}
@@ -773,7 +826,7 @@ export default function App() {
             <Leaderboard />
           </div>
         ) : (
-          <HubView onSelectGame={handleSelectGame} searchQuery={searchQuery} />
+          <HubView onSelectGame={handleSelectGame} searchQuery={searchQuery} soundEnabled={soundEnabled} />
         )}
       </main>
 
