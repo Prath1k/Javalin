@@ -72,6 +72,8 @@
 html, body, #root {
   height: 100%;
   width: 100%;
+  position: fixed;
+  overflow: hidden;
 }
 
 body {
@@ -82,7 +84,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
   font-size: 14px;
-  overflow: hidden;
 }
 
 /* Typography utilities */

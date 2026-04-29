@@ -5,8 +5,10 @@
 /* ── Layout Shell ───────────────────────────────────────── */
 .app-layout {
   display: flex;
-  height: 100vh;
+  position: fixed;
+  inset: 0;
   width: 100%;
+  height: 100%;
   overflow: hidden;
   background: transparent;
 }
@@ -16,6 +18,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -24,6 +27,7 @@
   width: var(--sidebar-w);
   flex-shrink: 0;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg-base);
@@ -360,6 +364,7 @@
   flex-direction: column;
   padding: 24px 32px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .content-area::-webkit-scrollbar { width: 4px; }
