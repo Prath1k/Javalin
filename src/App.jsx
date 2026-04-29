@@ -5,6 +5,7 @@ import { ScoreProvider, useScores } from './ScoreContext';
 import Leaderboard from './Leaderboard';
 
 import AmbientBackground from './components/AmbientBackground';
+import AdBanner from './components/AdBanner';
 import './components/LaunchTransition.css';
 import { playHoverTick, playClick, playLaunchSweep, hapticFeedback } from './utils/audio';
 
@@ -376,6 +377,10 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
             </div>
           ))}
         </nav>
+      </div>
+
+      <div className="nav-section" style={{ marginTop: 'auto', marginBottom: 16 }}>
+        <AdBanner />
       </div>
 
       {/* Footer */}
