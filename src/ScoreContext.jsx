@@ -22,84 +22,99 @@ export function ScoreProvider({ children, user }) {
     setGuestId(storedGuest);
   }, []);
 
-  // Load scores when user logs in (or load guest scores from server?)
-  // For guests, we can also load their highscores from Supabase if we want their local state synced.
+  // Load scores when user logs in
   useEffect(() => {
     async function fetchScores() {
       const fetchId = user ? user.id : guestId;
-      
-      if (fetchId) {
-        // Build the query to check either user_id or guest_id based on login state
-        const { data, error } = user 
-          ? await supabase.from('high_scores').select('game_id, score').eq('user_id', user.id)
-          : await supabase.from('high_scores').select('game_id, score').eq('guest_id', guestId).is('user_id', null);
+      if (!fetchId) return;
 
-        if (!error && data) {
+      try {
+        const query = supabase.from('high_scores').select('game_id, score');
+        if (user) {
+          query.eq('user_id', user.id);
+        } else {
+          query.eq('guest_id', guestId).is('user_id', null);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Error fetching scores:', error);
+          return;
+        }
+
+        if (data) {
           const scores = {};
           data.forEach((row) => {
             scores[row.game_id] = row.score;
           });
-          
-          // Merge with any local scores just in case server is wiped
-          const merged = { ...scores };
-          setHighScores(merged);
+          setHighScores(scores);
         }
-      } else {
-        setHighScores({});
+      } catch (err) {
+        console.error('Fetch scores exception:', err);
       }
     }
     fetchScores();
   }, [user, guestId]);
 
   const updateHighScore = async (gameId, score) => {
+    // 1. Update local state immediately for responsiveness
     const currentHighScore = highScores[gameId] || 0;
-    
-    if (score > currentHighScore) {
-      setHighScores((prev) => ({ ...prev, [gameId]: score }));
+    if (score <= currentHighScore) return;
 
+    setHighScores((prev) => ({ ...prev, [gameId]: score }));
+
+    // 2. Persist to Supabase
+    try {
       if (user) {
-        await supabase.from('high_scores').upsert(
+        const { error } = await supabase.from('high_scores').upsert(
           {
             user_id: user.id,
             game_id: gameId,
             score: score,
             updated_at: new Date().toISOString(),
-            display_name: user.user_metadata?.full_name || user.email || 'Player'
+            display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player'
           },
-          { onConflict: 'user_id, game_id' }
+          { onConflict: 'user_id,game_id' }
         );
+        if (error) console.error('Supabase HighScore Error (Auth):', error);
       } else if (guestId) {
-        await supabase.from('high_scores').upsert(
+        const { error } = await supabase.from('high_scores').upsert(
           {
             guest_id: guestId,
             game_id: gameId,
             score: score,
             updated_at: new Date().toISOString(),
-            display_name: guestId
+            display_name: `Guest ${guestId.split('-')[1] || guestId}`
           },
-          { onConflict: 'guest_id, game_id' }
+          { onConflict: 'guest_id,game_id' }
         );
+        if (error) console.error('Supabase HighScore Error (Guest):', error);
         localStorage.setItem(`${gameId}_highscore`, score);
       }
+    } catch (err) {
+      console.error('Update high score exception:', err);
     }
   };
 
-  // Log a game session (for logged-in users only — keeps play history)
+  // Log a game session
   const logGameSession = async (gameId, score = 0, durationSeconds = 0) => {
-    if (!user) return; // Only log for authenticated users
+    if (!user) return; 
     
     try {
-      await supabase.from('game_sessions').insert({
+      const { error } = await supabase.from('game_sessions').insert({
         user_id: user.id,
         game_id: gameId,
         score,
         duration_seconds: durationSeconds,
         played_at: new Date().toISOString(),
       });
+      if (error) console.error('Log Session Error:', error);
     } catch (err) {
-      console.error('Failed to log game session:', err);
+      console.error('Log session exception:', err);
     }
   };
+
 
   return (
     <ScoreContext.Provider value={{ highScores, updateHighScore, logGameSession, guestId }}>

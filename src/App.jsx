@@ -843,9 +843,27 @@ export default function App() {
 
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setActiveGame(null);
+    if (activeGame) {
+      playLaunchSweep(soundEnabled);
+      hapticFeedback(20, soundEnabled);
+      setTransitionState('closing-game');
+
+      setTimeout(() => {
+        setActiveGame(null);
+        setActiveTab(tab);
+        setIsFullscreen(false);
+        setTransitionState('opening-hub');
+
+        setTimeout(() => {
+          setTransitionState('idle');
+        }, 600);
+      }, 600);
+    } else {
+      setActiveTab(tab);
+      setActiveGame(null);
+    }
   };
+
 
   const handleFullscreen = () => setIsFullscreen(f => !f);
 
