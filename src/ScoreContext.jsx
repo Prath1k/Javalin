@@ -4,7 +4,7 @@ import { supabase } from './supabaseClient';
 const ScoreContext = createContext({
   highScores: {},
   updateHighScore: () => {},
-  leaderboardDetails: {},
+  logGameSession: () => {},
   guestId: null,
 });
 
@@ -27,7 +27,6 @@ export function ScoreProvider({ children, user }) {
   useEffect(() => {
     async function fetchScores() {
       const fetchId = user ? user.id : guestId;
-      const idColumn = user ? 'user_id' : 'guest_id';
       
       if (fetchId) {
         // Build the query to check either user_id or guest_id based on login state
@@ -85,8 +84,25 @@ export function ScoreProvider({ children, user }) {
     }
   };
 
+  // Log a game session (for logged-in users only — keeps play history)
+  const logGameSession = async (gameId, score = 0, durationSeconds = 0) => {
+    if (!user) return; // Only log for authenticated users
+    
+    try {
+      await supabase.from('game_sessions').insert({
+        user_id: user.id,
+        game_id: gameId,
+        score,
+        duration_seconds: durationSeconds,
+        played_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error('Failed to log game session:', err);
+    }
+  };
+
   return (
-    <ScoreContext.Provider value={{ highScores, updateHighScore, guestId }}>
+    <ScoreContext.Provider value={{ highScores, updateHighScore, logGameSession, guestId }}>
       {children}
     </ScoreContext.Provider>
   );

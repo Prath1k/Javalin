@@ -10,6 +10,12 @@
   padding: 0;
 }
 
+/* Prevent any canvas or image from spilling beyond its container */
+canvas, img, video, svg {
+  max-width: 100%;
+}
+
+
 /* Design Tokens */
 :root {
   /* Backgrounds */

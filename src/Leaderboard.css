@@ -160,3 +160,35 @@
     padding: 12px 15px;
   }
 }
+
+/* ── Player info row ──────────────────────────────────── */
+.lb-player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lb-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.lb-you-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: var(--primary-color);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lb-you td {
+  background: rgba(99, 102, 241, 0.06) !important;
+  border-left: 3px solid var(--primary-color);
+}

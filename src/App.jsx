@@ -1,9 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+
 import './App.css';
 import { supabase } from './supabaseClient';
 import { ScoreProvider, useScores } from './ScoreContext';
 import Leaderboard from './Leaderboard';
 import Creator from './Creator';
+import ProfileSetup from './ProfileSetup';
+import ProfilePage from './ProfilePage';
 
 
 import AmbientBackground from './components/AmbientBackground';
@@ -372,6 +375,16 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
             <Icon name="person" className="nav-icon" />
             Meet the Creator
           </div>
+          {user && (
+            <div
+              className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
+              onClick={withSound(() => { onTabChange('profile'); onClose?.(); })}
+              onMouseEnter={handleHover}
+            >
+              <Icon name="badge" className="nav-icon" />
+              My Profile
+            </div>
+          )}
         </nav>
       </div>
 
@@ -475,6 +488,8 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
             'Library'
           ) : activeTab === 'leaderboard' ? (
             'Global Leaderboard'
+          ) : activeTab === 'profile' ? (
+            'My Profile'
           ) : (
             'Discover'
           )}
@@ -621,12 +636,17 @@ function GamePlayer({ game, onClose, onFullscreen, isFullscreen }) {
     <div className={wrapperClass} style={isFullscreen ? undefined : { flex: 1, minHeight: 0 }}>
       <div className="console-header">
         <div className="console-dots">
-          <div className="dot close" onClick={onClose} />
-          <div className="dot min" onClick={isFullscreen ? onFullscreen : undefined} />
-          <div className="dot max" onClick={onFullscreen} />
+          <div className="dot close" onClick={onClose} title="Close" />
+          <div className="dot min" onClick={isFullscreen ? onFullscreen : undefined} title="Minimize" />
+          <div className="dot max" onClick={onFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} />
         </div>
         <div className="console-title">{gameId}</div>
-        <div style={{ width: 52 }} />
+        {/* Dedicated fullscreen button — always visible, easy to tap on mobile */}
+        <button className="console-fullscreen-btn" onClick={onFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+          <span className="material-symbols-outlined">
+            {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+          </span>
+        </button>
       </div>
       <div className="console-viewport">
         <GameComponent />
@@ -644,6 +664,7 @@ function GamePlayer({ game, onClose, onFullscreen, isFullscreen }) {
     </div>
   );
 }
+
 
 // ── Root App ────────────────────────────────────────────────
 export default function App() {
@@ -669,23 +690,47 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [transitionState, setTransitionState] = useState('idle'); // idle, animating, closing
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) checkProfileSetup(u);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (_event === 'SIGNED_IN' && u) checkProfileSetup(u);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Check if user needs to complete profile setup
+  const checkProfileSetup = async (u) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', u.id)
+        .single();
+      
+      // If profile doesn't exist or has no display name, show setup
+      if (!data || !data.display_name) {
+        setShowProfileSetup(true);
+      }
+    } catch {
+      // Profile doesn't exist yet (trigger may still be running)
+      setTimeout(() => setShowProfileSetup(true), 1000);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -773,10 +818,29 @@ export default function App() {
   };
 
   const handleHome = () => {
-    setActiveTab('hub');
-    setActiveGame(null);
-    setIsFullscreen(false);
+    // If no game is active, just navigate — no transition needed
+    if (!activeGame) {
+      setActiveTab('hub');
+      setIsFullscreen(false);
+      return;
+    }
+    // Play the close transition
+    playLaunchSweep(soundEnabled);
+    hapticFeedback(20, soundEnabled);
+    setTransitionState('closing-game');
+
+    setTimeout(() => {
+      setActiveGame(null);
+      setActiveTab('hub');
+      setIsFullscreen(false);
+      setTransitionState('opening-hub');
+
+      setTimeout(() => {
+        setTransitionState('idle');
+      }, 600);
+    }, 600);
   };
+
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -797,6 +861,7 @@ export default function App() {
           <div className="wipe-panel"></div>
         </div>
       )}
+
       <div className="app-layout">
         {!isFullscreen && (
           <Sidebar
@@ -842,10 +907,14 @@ export default function App() {
           />
         ) : activeTab === 'leaderboard' ? (
           <div className="content-area">
-            <Leaderboard />
+            <Leaderboard user={user} />
           </div>
         ) : activeTab === 'creator' ? (
           <Creator />
+        ) : activeTab === 'profile' ? (
+          <div className="content-area">
+            <ProfilePage user={user} />
+          </div>
         ) : activeTab === 'hub' ? (
           <HubView 
             onSelectGame={handleSelectGame}
@@ -947,6 +1016,13 @@ export default function App() {
         <SettingsModal 
           user={user} 
           onClose={() => setShowSettingsModal(false)} 
+        />
+      )}
+
+      {showProfileSetup && user && (
+        <ProfileSetup
+          user={user}
+          onComplete={() => setShowProfileSetup(false)}
         />
       )}
       </div>

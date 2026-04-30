@@ -1,0 +1,492 @@
+/* ── Profile Page ────────────────────────────────────────── */
+.profile-page {
+  padding: clamp(20px, 4vw, 48px);
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+/* ── Profile Card ──────────────────────────────────────── */
+.pp-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.pp-card-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(99, 102, 241, 0.15), 
+    rgba(139, 92, 246, 0.08),
+    transparent 70%
+  );
+  z-index: 0;
+}
+
+.pp-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 28px;
+}
+
+.pp-avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pp-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.pp-avatar-icon {
+  font-size: 48px;
+  color: var(--text-muted);
+}
+
+.pp-avatar-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--primary-color);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.pp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-info h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-bio {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.pp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pp-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.pp-meta .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.pp-edit-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.pp-edit-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+}
+
+.pp-edit-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* ── Save Message ──────────────────────────────────────── */
+.pp-save-msg {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  text-align: center;
+  animation: psFadeIn 0.3s ease;
+}
+
+/* ── Edit Section ──────────────────────────────────────── */
+.pp-edit-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  animation: psSlideUp 0.3s ease;
+}
+
+.pp-edit-section h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 20px;
+}
+
+.pp-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pp-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-edit-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-label);
+}
+
+.pp-edit-form input,
+.pp-edit-form textarea,
+.pp-edit-form select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pp-edit-form input:focus,
+.pp-edit-form textarea:focus,
+.pp-edit-form select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.pp-edit-form textarea {
+  resize: vertical;
+}
+
+.pp-edit-form select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.pp-save-btn {
+  padding: 12px;
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 4px;
+}
+
+.pp-save-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.pp-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Stats Grid ────────────────────────────────────────── */
+.pp-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.pp-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.pp-stat-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 24px;
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* ── Section ───────────────────────────────────────────── */
+.pp-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.pp-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.pp-section h3 .material-symbols-outlined {
+  font-size: 20px;
+  color: var(--accent);
+}
+
+/* ── Scores Grid ───────────────────────────────────────── */
+.pp-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.pp-score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.2s;
+}
+
+.pp-score-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.pp-score-game {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.pp-score-value {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+/* ── Activity List ─────────────────────────────────────── */
+.pp-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pp-activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.2s;
+}
+
+.pp-activity-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.pp-activity-game {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pp-activity-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.pp-activity-score {
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.pp-activity-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ── Empty states ──────────────────────────────────────── */
+.pp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 20px;
+  gap: 12px;
+  color: var(--text-muted);
+}
+
+.pp-empty .material-symbols-outlined {
+  font-size: 48px;
+  opacity: 0.4;
+}
+
+.pp-empty h3 {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pp-empty p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.pp-empty-small {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Loading ───────────────────────────────────────────── */
+.pp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+  color: var(--text-muted);
+}
+
+.pp-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: ppSpin 0.8s linear infinite;
+}
+
+@keyframes ppSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .pp-card-content {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px 20px;
+  }
+  
+  .pp-info h2 {
+    white-space: normal;
+  }
+  
+  .pp-meta {
+    justify-content: center;
+  }
+  
+  .pp-edit-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
+  
+  .pp-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .pp-scores-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pp-activity-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

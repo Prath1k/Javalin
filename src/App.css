@@ -570,10 +570,42 @@
 .console-wrapper.fullscreen {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
   border: none;
   border-radius: 0;
   z-index: 9999;
+  /* Flex column so header + viewport stack correctly */
+  display: flex;
+  flex-direction: column;
 }
+
+
+
+/* Fullscreen button in the console header */
+.console-fullscreen-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  transition: color var(--ease), background var(--ease);
+  flex-shrink: 0;
+}
+.console-fullscreen-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+.console-fullscreen-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
 
 .console-header {
   height: 40px;
@@ -619,23 +651,72 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
+  /* On very small screens allow horizontal scroll within the game */
+  position: relative;
 }
 
+/* Game roots: fill the viewport, don't overflow the wrapper */
 .console-viewport > * {
-  flex: 1 0 auto;
+  flex: 1 1 0;   /* allow both grow AND shrink */
   width: 100%;
   min-height: 100%;
-}
-
-/* Ensure embedded game roots can scale and scroll safely inside the console. */
-.console-viewport > * {
   max-width: 100%;
   overflow-x: hidden;
 }
 
+/* ── React fullscreen class (position:fixed) ──────────────── */
+.console-wrapper.fullscreen .console-viewport {
+  /* Take all space below the 40px header */
+  flex: 1 1 0;
+  height: calc(100vh - 40px);
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.console-wrapper.fullscreen .console-viewport > * {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 40px);
+  max-width: 100%;
+  overflow-x: hidden;
+  flex: 1 1 0;
+}
+
+/* Canvas elements inside the fullscreen viewport should scale to fill */
+.console-wrapper.fullscreen .console-viewport canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: calc(100vh - 40px);
+  object-fit: contain;
+}
+
+/* Override individual game container layouts in fullscreen:
+   games often have flex-direction:column + align-items:center which leaves
+   black bars. In fullscreen, stretch them to fill all available space. */
+.console-wrapper.fullscreen .console-viewport > *,
+.console-wrapper.fullscreen .console-viewport > * > * {
+  box-sizing: border-box;
+}
+/* Let each game's root container fill height in fullscreen */
+.console-wrapper.fullscreen .console-viewport > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+
 .console-viewport::-webkit-scrollbar { width: 6px; }
 .console-viewport::-webkit-scrollbar-track { background: transparent; }
 .console-viewport::-webkit-scrollbar-thumb { background: var(--border-focus); border-radius: 3px; }
+
+
+
+
 
 /* ── Discover page ──────────────────────────────────────── */
 .discover-empty {
@@ -800,19 +881,20 @@
   .topbar-search {
     width: 200px;
   }
-  
   .content-area {
     padding: 32px 24px;
   }
 }
 
-/* Mobile */
+/* Mobile (≤768px) */
 @media (max-width: 768px) {
+  /* Show hamburger */
   .menu-toggle {
     display: flex !important;
-    margin-right: 12px;
+    margin-right: 8px;
   }
 
+  /* Sidebar becomes off-canvas drawer */
   .sidebar {
     position: fixed;
     top: 0;
@@ -823,99 +905,190 @@
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
     background: var(--bg-elevated);
+    width: min(260px, 85vw);
   }
-
   .sidebar.open {
     transform: translateX(0);
   }
 
+  /* Topbar tightened */
   .topbar {
-    padding: 0 16px;
+    padding: 0 12px;
+    gap: 4px;
   }
-
-  .topbar-search {
-    display: none; /* Hide search on small mobile to save space */
-  }
-
   .topbar-left {
     gap: 0;
+    flex: 1;
+    min-width: 0;
   }
-
-  .topbar-tabs {
-    display: none; /* Hide tabs on mobile, or move to sidebar? */
-  }
-
   .page-title {
-    font-size: 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 180px);
+  }
+  .topbar-tabs { display: none; }
+  .topbar-search { display: none; }
+  .topbar-right {
+    gap: 4px;
+    flex-shrink: 0;
   }
 
+  /* Content area */
   .content-area {
-    padding: 24px 16px;
+    padding: 20px 14px;
   }
-
   .content-area.game-content {
-    padding: 16px;
+    padding: 10px;
   }
 
+  /* Touch controls */
   .game-touch-controls {
     display: flex;
   }
 
+  /* Hub header */
   .hub-header {
-    margin-bottom: 32px;
+    margin-bottom: 24px;
   }
-
   .hub-title {
     font-size: 18px;
   }
 
+  /* Game grid */
   .game-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 20px 16px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px 12px;
   }
-
   .game-card-title {
     font-size: 11px;
   }
-
   .game-card-desc {
-    display: none; /* Hide desc on very small cards */
+    display: none;
   }
 
+  /* Footer */
   .hub-footer {
     flex-direction: column;
     align-items: flex-start;
-    gap: 24px;
-    padding: 24px 16px;
+    gap: 20px;
+    padding: 20px 14px;
   }
-
   .footer-stats {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    gap: 24px;
   }
-
   .footer-status {
     text-align: left;
     width: 100%;
   }
-
   .footer-status-badge {
+    justify-content: flex-start;
+  }
+
+  /* Auth modal */
+  .modal-content {
+    max-width: calc(100vw - 32px);
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  /* Creator page */
+  .creator-view {
+    padding: 32px 16px;
+    align-items: flex-start;
+  }
+  .creator-container {
+    text-align: left;
+  }
+  .creator-avatar-wrapper {
+    margin-left: 0;
+  }
+  .creator-name {
+    font-size: 26px;
+  }
+  .status-badge {
+    right: auto;
+    left: 148px;
+  }
+  .social-grid {
+    grid-template-columns: 1fr;
+  }
+  .social-card {
+    flex-direction: row;
+    padding: 14px 18px;
+  }
+  .social-info {
+    text-align: left;
+    margin: 0;
+  }
+  .external-icon {
+    position: static;
+  }
+  .tech-stack {
+    flex-wrap: wrap;
+    gap: 12px;
     justify-content: flex-start;
   }
 }
 
-/* Extra Small Devices */
+/* Extra Small (≤480px) */
 @media (max-width: 480px) {
-  .game-grid {
-    grid-template-columns: 1fr 1fr;
+  :root {
+    --topbar-h: 50px;
   }
 
+  .game-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 10px;
+  }
+  .game-card-thumb {
+    margin-bottom: 8px;
+  }
+
+  .content-area {
+    padding: 16px 12px;
+  }
   .content-area.game-content {
-    padding: 12px;
+    padding: 8px;
   }
 
   .game-controls-hint {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .hub-footer {
+    padding: 16px 12px;
+  }
+
+  .console-header {
+    padding: 0 10px;
+  }
+  .console-title {
+    font-size: 9px;
+  }
+
+  /* Modal covers full width on tiny screens */
+  .modal-content {
+    max-width: calc(100vw - 16px);
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+  .modal-title {
+    font-size: 1.3rem;
+  }
+
+  /* Creator tweaks */
+  .creator-name {
+    font-size: 22px;
+  }
+  .creator-avatar-wrapper {
+    width: 100px;
+    height: 100px;
+  }
+  .creator-bio p {
+    font-size: 14px;
   }
 }
 /* ── Modals ─────────────────────────────────────────────── */

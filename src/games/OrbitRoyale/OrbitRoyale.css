@@ -1,7 +1,8 @@
 .orbit-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
   background: #000;
   color: #fff;
   font-family: 'Space Mono', monospace;
@@ -12,6 +13,12 @@
 }
 
 .orbit-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+
   background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%);
   border: 1px solid rgba(255,255,255,0.05);
   box-shadow: 0 0 100px rgba(0, 255, 255, 0.05);

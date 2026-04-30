@@ -88,3 +88,63 @@
     transform: scaleY(0);
   }
 }
+
+/* ── Close-game transition ──────────────────────────────────
+   Wipes IN from top/bottom (same mechanic) but in REVERSE
+   panel order (5→1) for a distinct "shutting down" feel.      */
+
+.launch-transition-overlay.closing-game .wipe-panel {
+  transform: scaleY(0);
+  transform-origin: center;
+}
+
+.launch-transition-overlay.closing-game .wipe-panel:nth-child(5) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.0s;
+}
+.launch-transition-overlay.closing-game .wipe-panel:nth-child(4) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.05s;
+}
+.launch-transition-overlay.closing-game .wipe-panel:nth-child(3) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.1s;
+}
+.launch-transition-overlay.closing-game .wipe-panel:nth-child(2) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.15s;
+}
+.launch-transition-overlay.closing-game .wipe-panel:nth-child(1) {
+  animation: wipeIn 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.2s;
+}
+
+/* ── Opening-hub transition ─────────────────────────────────
+   Panels are fully covering the screen; wipe OUT in reverse
+   order (5→1) to reveal the hub underneath.                   */
+
+.launch-transition-overlay.opening-hub .wipe-panel {
+  transform: scaleY(1);
+  transform-origin: center;
+}
+
+.launch-transition-overlay.opening-hub .wipe-panel:nth-child(5) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.0s;
+}
+.launch-transition-overlay.opening-hub .wipe-panel:nth-child(4) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.05s;
+}
+.launch-transition-overlay.opening-hub .wipe-panel:nth-child(3) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.1s;
+}
+.launch-transition-overlay.opening-hub .wipe-panel:nth-child(2) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.15s;
+}
+.launch-transition-overlay.opening-hub .wipe-panel:nth-child(1) {
+  animation: wipeOut 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation-delay: 0.2s;
+}
