@@ -3,6 +3,8 @@ import './App.css';
 import { supabase } from './supabaseClient';
 import { ScoreProvider, useScores } from './ScoreContext';
 import Leaderboard from './Leaderboard';
+import Creator from './Creator';
+
 
 import AmbientBackground from './components/AmbientBackground';
 import AdBanner from './components/AdBanner';
@@ -60,6 +62,10 @@ import imgInfectionTag from './assets/games/infection-tag.png';
 import imgTheGlitch from './assets/games/the-glitch.png';
 import imgOrbitRoyale from './assets/games/orbit-royale.png';
 import imgVectorRace from './assets/games/vector-race.png';
+import imgNeonAirHockey from './assets/games/neon-air-hockey.png';
+import imgLudoRoyale from './assets/games/ludo-royale.png';
+import imgSnakesLadders from './assets/games/snakes-ladders.png';
+import imgRetroRacer from './assets/games/retro-racer.png';
 
 
 // ── Game Registry ───────────────────────────────────────────
@@ -161,7 +167,7 @@ const GAMES = [
     genre: 'Arcade / Sports',
     desc: 'High-speed glow rink duels with VS AI and local 2P controls on one keyboard.',
     icon: '🏒',
-    image: null,
+    image: imgNeonAirHockey,
     component: NeonAirHockey,
     status: 'active',
   },
@@ -201,7 +207,7 @@ const GAMES = [
     genre: 'Board / Party',
     desc: 'Classic Ludo with local or global rooms inspired by Ludo King.',
     icon: '🎲',
-    image: null,
+    image: imgLudoRoyale,
     component: LudoGame,
     status: 'active',
   },
@@ -291,7 +297,7 @@ const GAMES = [
     genre: 'Board / Party',
     desc: 'Classic board game replicated with a premium jungle aesthetic. Scale the ladders, avoid the snakes!',
     icon: '🐍',
-    image: null,
+    image: imgSnakesLadders,
     component: SnakesAndLadders,
     status: 'active',
   },
@@ -301,7 +307,7 @@ const GAMES = [
     genre: 'Racing / Retro',
     desc: 'A classic pseudo-3D outrun style arcade racing game with synthwave aesthetic.',
     icon: '🏎️',
-    image: null,
+    image: imgRetroRacer,
     component: RetroRacer,
     status: 'active',
   },
@@ -357,6 +363,14 @@ function Sidebar({ activeGame, onSelectGame, onHome, activeTab, onTabChange, use
           >
             <Icon name="leaderboard" className="nav-icon" />
             Global Ranks
+          </div>
+          <div
+            className={`nav-item ${activeTab === 'creator' ? 'active' : ''}`}
+            onClick={withSound(() => { onTabChange('creator'); onClose?.(); })}
+            onMouseEnter={handleHover}
+          >
+            <Icon name="person" className="nav-icon" />
+            Meet the Creator
           </div>
         </nav>
       </div>
@@ -830,9 +844,15 @@ export default function App() {
           <div className="content-area">
             <Leaderboard />
           </div>
-        ) : (
-          <HubView onSelectGame={handleSelectGame} searchQuery={searchQuery} soundEnabled={soundEnabled} />
-        )}
+        ) : activeTab === 'creator' ? (
+          <Creator />
+        ) : activeTab === 'hub' ? (
+          <HubView 
+            onSelectGame={handleSelectGame}
+            searchQuery={searchQuery}
+            soundEnabled={soundEnabled}
+          />
+        ) : null}
       </main>
 
       {showLoginModal && (
