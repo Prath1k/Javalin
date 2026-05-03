@@ -9,6 +9,7 @@
   background: linear-gradient(135deg, #0f172a, #1e1b4b);
   font-family: 'Inter', sans-serif;
   position: relative;
+  overflow-y: auto;
 }
 
 .sweeper-container.screen-shake {

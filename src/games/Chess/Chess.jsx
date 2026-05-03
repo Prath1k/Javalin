@@ -542,14 +542,7 @@ const ChessGame = () => {
 
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-    let visualR = r;
-    let visualC = c;
-    if (mode === 'online' && playerColor === 'b') {
-      visualR = 7 - r;
-      visualC = 7 - c;
-    }
-
-    const square = files[visualC] + ranks[visualR];
+    const square = files[c] + ranks[r];
     const piece = chess.get(square);
 
     if (selectedSquare) {

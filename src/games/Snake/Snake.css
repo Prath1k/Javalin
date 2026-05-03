@@ -2,12 +2,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   width: 100%;
   min-height: 100%;
-  height: auto;
-  padding: clamp(10px, 2vw, 20px);
+  padding: clamp(20px, 5vw, 40px) 20px;
   background: radial-gradient(circle at center, rgba(30, 27, 75, 0.4) 0%, transparent 70%);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Screen Shake */

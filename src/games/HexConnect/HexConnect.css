@@ -10,6 +10,7 @@
   color: #fff;
   font-family: 'Space Grotesk', sans-serif;
   user-select: none;
+  overflow-y: auto;
 }
 
 .hex-header {

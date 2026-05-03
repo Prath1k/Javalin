@@ -12,6 +12,7 @@
   padding: clamp(12px, 2vw, 20px);
   font-family: 'Courier New', Courier, monospace;
   position: relative;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 

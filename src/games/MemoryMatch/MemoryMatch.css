@@ -2,12 +2,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   width: 100%;
   min-height: 100%;
-  height: auto;
-  padding: clamp(16px, 3vw, 40px) 20px;
+  padding: clamp(20px, 5vw, 40px) 20px;
   background: radial-gradient(circle at top, rgba(59, 130, 246, 0.1) 0%, transparent 60%);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .memory-header {
