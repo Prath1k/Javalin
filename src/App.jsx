@@ -490,6 +490,8 @@ function Topbar({ activeGame, activeTab, onTabChange, searchQuery, onSearch, onH
             'Global Leaderboard'
           ) : activeTab === 'profile' ? (
             'My Profile'
+          ) : activeTab === 'creator' ? (
+            'Meet the Creator'
           ) : (
             'Discover'
           )}
