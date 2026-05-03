@@ -9,6 +9,8 @@
   padding: clamp(12px, 2.4vw, 20px);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* CRT Overlays */

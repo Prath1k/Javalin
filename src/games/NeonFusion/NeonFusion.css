@@ -3,10 +3,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  min-height: 100%;
   background: var(--bg-base);
   padding: 40px;
   font-family: 'Space Mono', monospace;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .fusion-header {

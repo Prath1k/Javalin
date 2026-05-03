@@ -1,7 +1,7 @@
 .vector-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100%;
   background: radial-gradient(circle at center, #0a0a1a 0%, #000 100%);
   color: #fff;
   font-family: 'Space Mono', monospace;
@@ -9,6 +9,8 @@
   align-items: center;
   justify-content: center;
   perspective: 1000px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .vector-hud {

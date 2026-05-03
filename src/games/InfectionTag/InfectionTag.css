@@ -1,12 +1,14 @@
 .infection-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100%;
   background: var(--bg-base);
   color: #fff;
   font-family: 'Space Mono', monospace;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .infection-header {
